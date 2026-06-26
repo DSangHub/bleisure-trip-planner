@@ -625,56 +625,332 @@
 
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ unit: "pt", format: "letter" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 48;
-      const lineHeight = 16;
-      let y = margin;
+      const contentWidth = pageWidth - margin * 2;
+      const bottomLimit = pageHeight - 56;
+      let y = 0;
 
-      function addLine(text, options = {}) {
-        if (y > 720) {
-          doc.addPage();
-          y = margin;
+      const colors = {
+        ink: [15, 20, 25],
+        panel: [26, 35, 50],
+        mist: [148, 163, 184],
+        sky: [56, 189, 248],
+        business: [245, 158, 11],
+        leisure: [52, 211, 153],
+        solar: [251, 191, 36],
+        text: [30, 41, 59],
+        line: [203, 213, 225],
+      };
+
+      function setTextColor(rgb) {
+        doc.setTextColor(rgb[0], rgb[1], rgb[2]);
+      }
+
+      function setDrawColor(rgb) {
+        doc.setDrawColor(rgb[0], rgb[1], rgb[2]);
+      }
+
+      function setFillColor(rgb) {
+        doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+      }
+
+      function wrapText(text, width, fontSize = 10) {
+        doc.setFontSize(fontSize);
+        return doc.splitTextToSize(text, width);
+      }
+
+      function drawPageHeader(isFirstPage) {
+        const bandHeight = isFirstPage ? 78 : 34;
+        setFillColor(colors.ink);
+        doc.rect(0, 0, pageWidth, bandHeight, "F");
+
+        setTextColor([255, 255, 255]);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(isFirstPage ? 22 : 12);
+        doc.text("Bleisure Trip Planner", margin, isFirstPage ? 34 : 21);
+
+        if (isFirstPage) {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10);
+          setTextColor(colors.mist);
+          doc.text("Business + Leisure travel plan", margin, 52);
+          doc.text(new Date().toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }), pageWidth - margin, 52, { align: "right" });
         }
-        doc.setFont("helvetica", options.bold ? "bold" : "normal");
-        doc.setFontSize(options.size || 11);
-        doc.text(text, margin, y);
-        y += options.spacing || lineHeight;
+
+        y = bandHeight + 22;
       }
 
-      addLine("Bleisure Trip Planner", { bold: true, size: 18, spacing: 24 });
-      addLine(`Traveler: ${data.traveler || "Guest"}`, { bold: true });
-      addLine(`Destination: ${data.destination}`);
-      addLine(`Dates: ${data.startDate} to ${data.endDate}`);
-      addLine(`Trip length: ${total} days (${data.businessDays} business, ${data.leisureDays} leisure)`);
-      if (data.notes) {
-        addLine(`Notes: ${data.notes}`);
+      function ensureSpace(needed) {
+        if (y + needed > bottomLimit) {
+          doc.addPage();
+          drawPageHeader(false);
+        }
       }
 
-      y += 8;
-      addLine("Itinerary", { bold: true, size: 13, spacing: 20 });
-      currentDays.forEach((day) => {
-        addLine(`${day.label} (${day.type})`, { bold: true });
-        day.activities.forEach((activity) => {
-          addLine(`- ${activity || "Open time"}`);
-        });
-        y += 4;
-      });
-
-      y += 8;
-      addLine("Solar hotel suggestions", { bold: true, size: 13, spacing: 20 });
-      currentHotels.forEach((hotel) => {
-        addLine(`${hotel.name} - ${formatMoney(hotel.nightlyRate)}/night, ${hotel.solarCoverage}% solar`, { bold: true });
-        addLine(hotel.highlight);
-        y += 4;
-      });
-
-      if (latestCostEstimate) {
+      function drawSectionTitle(title) {
+        ensureSpace(34);
+        setTextColor(colors.text);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13);
+        doc.text(title, margin, y);
         y += 8;
-        addLine("Travel cost estimate", { bold: true, size: 13, spacing: 20 });
-        addLine(`Conventional total: ${formatMoney(latestCostEstimate.conventionalTotal)}`);
-        addLine(`Solar stay total: ${formatMoney(latestCostEstimate.solarTotal)}`);
-        addLine(`Estimated savings: ${formatMoney(latestCostEstimate.savings)}`);
-        addLine(`Carbon avoided: ${latestCostEstimate.carbonAvoidedKg} kg CO2`);
+        setDrawColor(colors.sky);
+        doc.setLineWidth(1.5);
+        doc.line(margin, y, margin + 72, y);
+        y += 18;
       }
+
+      function drawStatBoxes() {
+        const boxWidth = (contentWidth - 16) / 3;
+        const boxHeight = 46;
+        ensureSpace(boxHeight + 8);
+
+        const stats = [
+          { label: "Total days", value: String(total), color: colors.sky },
+          { label: "Business", value: String(data.businessDays), color: colors.business },
+          { label: "Leisure", value: String(data.leisureDays), color: colors.leisure },
+        ];
+
+        stats.forEach((stat, index) => {
+          const x = margin + index * (boxWidth + 8);
+          setFillColor([248, 250, 252]);
+          setDrawColor(colors.line);
+          doc.setLineWidth(0.75);
+          doc.roundedRect(x, y, boxWidth, boxHeight, 6, 6, "FD");
+          setTextColor(stat.color);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(18);
+          doc.text(stat.value, x + 12, y + 24);
+          setTextColor(colors.mist);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          doc.text(stat.label, x + 12, y + 38);
+        });
+
+        y += boxHeight + 18;
+      }
+
+      function drawTripSummary() {
+        drawSectionTitle("Trip summary");
+        ensureSpace(88);
+
+        setFillColor([248, 250, 252]);
+        setDrawColor(colors.line);
+        doc.setLineWidth(0.75);
+        doc.roundedRect(margin, y, contentWidth, 82, 8, 8, "FD");
+
+        const leftX = margin + 14;
+        const rightX = margin + contentWidth / 2 + 4;
+        const baseY = y + 22;
+        const rows = [
+          ["Traveler", data.traveler || "Guest"],
+          ["Destination", data.destination],
+          ["Dates", `${data.startDate} to ${data.endDate}`],
+        ];
+
+        rows.forEach((row, index) => {
+          const lineY = baseY + index * 18;
+          setTextColor(colors.mist);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          doc.text(row[0], leftX, lineY);
+          setTextColor(colors.text);
+          doc.setFont("helvetica", index === 1 ? "bold" : "normal");
+          doc.setFontSize(10);
+          doc.text(row[1], leftX + 62, lineY);
+        });
+
+        if (data.notes) {
+          setTextColor(colors.mist);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          doc.text("Notes", rightX, baseY);
+          const noteLines = wrapText(data.notes, contentWidth / 2 - 28, 9);
+          setTextColor(colors.text);
+          doc.text(noteLines.slice(0, 3), rightX, baseY + 14);
+        }
+
+        y += 96;
+      }
+
+      function dayAccentColor(type) {
+        if (type === "business") return colors.business;
+        if (type === "leisure") return colors.leisure;
+        return colors.mist;
+      }
+
+      function drawItinerarySection() {
+        drawSectionTitle("Day-by-day itinerary");
+
+        currentDays.forEach((day) => {
+          const activityLines = day.activities.flatMap((activity) => {
+            const prefix = "- ";
+            return wrapText(`${prefix}${activity || "Open time"}`, contentWidth - 36, 10);
+          });
+          const blockHeight = 30 + activityLines.length * 13;
+          ensureSpace(blockHeight + 8);
+
+          const blockTop = y;
+          setFillColor([255, 255, 255]);
+          setDrawColor(colors.line);
+          doc.setLineWidth(0.75);
+          doc.roundedRect(margin, blockTop, contentWidth, blockHeight, 6, 6, "FD");
+
+          setFillColor(dayAccentColor(day.type));
+          doc.rect(margin, blockTop, 4, blockHeight, "F");
+
+          setTextColor(colors.text);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(11);
+          doc.text(day.label, margin + 14, blockTop + 18);
+
+          const badge = day.type === "open" ? "FLEXIBLE" : day.type.toUpperCase();
+          setTextColor(dayAccentColor(day.type));
+          doc.setFontSize(8);
+          doc.text(badge, pageWidth - margin - 14, blockTop + 18, { align: "right" });
+
+          setTextColor(colors.mist);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8);
+          doc.text(day.date, margin + 14, blockTop + 30);
+
+          setTextColor(colors.text);
+          doc.setFontSize(10);
+          doc.text(activityLines, margin + 14, blockTop + 46);
+
+          y = blockTop + blockHeight + 10;
+        });
+      }
+
+      function drawHotelsSection() {
+        drawSectionTitle("Solar-powered hotel suggestions");
+
+        currentHotels.forEach((hotel) => {
+          const detailLines = wrapText(hotel.highlight, contentWidth - 28, 9);
+          const blockHeight = 54 + detailLines.length * 11;
+          ensureSpace(blockHeight + 8);
+
+          const blockTop = y;
+          setFillColor([255, 251, 235]);
+          setDrawColor([251, 191, 36]);
+          doc.setLineWidth(0.75);
+          doc.roundedRect(margin, blockTop, contentWidth, blockHeight, 6, 6, "FD");
+
+          setTextColor(colors.text);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(11);
+          doc.text(hotel.name, margin + 12, blockTop + 18);
+
+          setTextColor([146, 64, 14]);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          const meta = `${formatMoney(hotel.nightlyRate)}/night   |   ${hotel.solarCoverage}% solar   |   ${hotel.rating.toFixed(1)} / 5`;
+          doc.text(meta, margin + 12, blockTop + 32);
+
+          setTextColor(colors.text);
+          doc.text(detailLines, margin + 12, blockTop + 46);
+
+          y = blockTop + blockHeight + 10;
+        });
+      }
+
+      function drawCostSection() {
+        if (!latestCostEstimate) {
+          return;
+        }
+
+        drawSectionTitle("Travel cost estimate");
+        const estimate = latestCostEstimate;
+        const rows = [
+          ["Flights", formatMoney(estimate.flight)],
+          ["Lodging (conventional)", formatMoney(estimate.lodgingConventional)],
+          ["Lodging (solar stay)", formatMoney(estimate.lodgingSolar)],
+          ["Meals & activities", formatMoney(estimate.meals)],
+          ["Local transport", formatMoney(estimate.transport)],
+          ["Solar energy credit", `-${formatMoney(estimate.energyCredit)}`],
+        ];
+
+        const tableTop = y;
+        const rowHeight = 20;
+        const tableHeight = rowHeight * (rows.length + 3) + 12;
+        ensureSpace(tableHeight + 8);
+
+        setFillColor([255, 255, 255]);
+        setDrawColor(colors.line);
+        doc.setLineWidth(0.75);
+        doc.roundedRect(margin, tableTop, contentWidth, tableHeight, 8, 8, "FD");
+
+        let rowY = tableTop + 24;
+        rows.forEach(([label, value]) => {
+          setTextColor(colors.mist);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          doc.text(label, margin + 14, rowY);
+          setTextColor(colors.text);
+          doc.text(value, pageWidth - margin - 14, rowY, { align: "right" });
+          rowY += rowHeight;
+        });
+
+        setDrawColor(colors.line);
+        doc.line(margin + 12, rowY - 6, pageWidth - margin - 12, rowY - 6);
+
+        const totals = [
+          ["Conventional total", formatMoney(estimate.conventionalTotal), colors.text],
+          ["Solar stay total", formatMoney(estimate.solarTotal), [180, 83, 9]],
+          ["Estimated savings", formatMoney(estimate.savings), [5, 150, 105]],
+        ];
+
+        totals.forEach(([label, value, color]) => {
+          setTextColor(colors.mist);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(label === "Estimated savings" ? 10 : 9);
+          doc.text(label, margin + 14, rowY);
+          setTextColor(color);
+          doc.text(value, pageWidth - margin - 14, rowY, { align: "right" });
+          rowY += rowHeight;
+        });
+
+        y = tableTop + tableHeight + 10;
+        ensureSpace(18);
+        setTextColor(colors.mist);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text(
+          `Estimated carbon avoided: ${estimate.carbonAvoidedKg} kg CO2 by choosing solar-powered stays.`,
+          margin,
+          y,
+        );
+        y += 18;
+      }
+
+      function drawFooters() {
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let page = 1; page <= totalPages; page += 1) {
+          doc.setPage(page);
+          setDrawColor(colors.line);
+          doc.setLineWidth(0.5);
+          doc.line(margin, pageHeight - 36, pageWidth - margin, pageHeight - 36);
+          setTextColor(colors.mist);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8);
+          doc.text("Bleisure Trip Planner", margin, pageHeight - 20);
+          doc.text(`Page ${page} of ${totalPages}`, pageWidth - margin, pageHeight - 20, { align: "right" });
+        }
+      }
+
+      drawPageHeader(true);
+      drawStatBoxes();
+      drawTripSummary();
+      drawItinerarySection();
+      drawHotelsSection();
+      drawCostSection();
+      drawFooters();
 
       const safeDestination = data.destination.replace(/[^\w.-]+/g, "_");
       doc.save(`bleisure-trip-${safeDestination}.pdf`);
