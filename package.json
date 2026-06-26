@@ -1,0 +1,36 @@
+{
+  "name": "bleisure-trip-planner",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "serve:static": "node scripts/serve-static.mjs",
+    "serve:static:serve": "serve out -l tcp://0.0.0.0:3000 -c serve.json",
+    "serve:static:python": "python3 scripts/serve-static.py",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "jspdf": "^2.5.2",
+    "leaflet": "^1.9.4",
+    "next": "^15.3.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-leaflet": "^5.0.0",
+    "zustand": "^5.0.5"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@types/leaflet": "^1.9.17",
+    "@types/node": "^22.15.21",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "eslint": "^9.27.0",
+    "eslint-config-next": "^15.3.3",
+    "postcss": "^8.5.4",
+    "serve": "^14.2.4",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.3"
+  }
+}

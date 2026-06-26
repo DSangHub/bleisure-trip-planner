@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bleisure Trip Planner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  >
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: "#0f1419",
+            panel: "#1a2332",
+            panel2: "#243044",
+            line: "#2f3f57",
+            mist: "#94a3b8",
+            sky: "#38bdf8",
+            violet: "#818cf8",
+            biz: "#f59e0b",
+            fun: "#34d399",
+            solar: "#fbbf24",
+          },
+          boxShadow: {
+            glow: "0 18px 50px rgba(0, 0, 0, 0.35)",
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    #map {
+      z-index: 0;
+    }
+
+    .leaflet-container {
+      font-family: inherit;
+    }
+
+    .day-list {
+      scrollbar-width: thin;
+      scrollbar-color: #2f3f57 transparent;
+    }
+  </style>
+</head>
+<body class="min-h-full bg-ink text-slate-100 antialiased">
+  <div class="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(129,140,248,0.16),transparent_24%)]"></div>
+
+  <div class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
+    <header class="mb-6 sm:mb-8">
+      <div class="inline-flex items-center rounded-full border border-sky/25 bg-sky/10 px-3 py-1 text-xs font-medium text-sky sm:text-sm">
+        Business + Leisure
+      </div>
+      <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
+        Bleisure Trip Planner
+      </h1>
+      <p class="mt-2 max-w-2xl text-sm leading-relaxed text-mist sm:text-base">
+        Balance meetings and downtime in one itinerary. Compare solar-powered stays, estimate travel costs with
+        energy savings, preview your destination on the map, and export a PDF when you are ready.
+      </p>
+    </header>
+
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5 xl:gap-6">
+      <div class="flex flex-col gap-4 lg:col-span-5 xl:col-span-5">
+        <section class="rounded-2xl border border-line bg-panel/95 p-4 shadow-glow backdrop-blur sm:p-5">
+          <h2 class="mb-4 text-lg font-semibold">Trip setup</h2>
+          <form id="trip-form" class="space-y-4">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div class="sm:col-span-2">
+                <label for="destination" class="mb-1.5 block text-sm text-mist">Destination</label>
+                <input
+                  id="destination"
+                  name="destination"
+                  placeholder="Lisbon, Portugal"
+                  required
+                  class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30 sm:text-base"
+                >
+              </div>
+              <div>
+                <label for="traveler" class="mb-1.5 block text-sm text-mist">Traveler name</label>
+                <input
+                  id="traveler"
+                  name="traveler"
+                  placeholder="Alex Rivera"
+                  class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30 sm:text-base"
+                >
+              </div>
+              <div>
+                <label for="start-date" class="mb-1.5 block text-sm text-mist">Start date</label>
+                <input
+                  id="start-date"
+                  name="startDate"
+                  type="date"
+                  required
+                  class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30 sm:text-base"
+                >
+              </div>
+              <div>
+                <label for="end-date" class="mb-1.5 block text-sm text-mist">End date</label>
+                <input
+                  id="end-date"
+                  name="endDate"
+                  type="date"
+                  required
+                  class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30 sm:text-base"
+                >
+              </div>
+              <div>
+                <label for="business-days" class="mb-1.5 block text-sm text-mist">Business days</label>
+                <input
+                  id="business-days"
+                  name="businessDays"
+                  type="number"
+                  min="0"
+                  value="3"
+                  class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30 sm:text-base"
+                >
+              </div>
+              <div>
+                <label for="leisure-days" class="mb-1.5 block text-sm text-mist">Leisure days</label>
+                <input
+                  id="leisure-days"
+                  name="leisureDays"
+                  type="number"
+                  min="0"
+                  value="2"
+                  class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30 sm:text-base"
+                >
+              </div>
+            </div>
+
+            <div>
+              <label for="notes" class="mb-1.5 block text-sm text-mist">Trip notes</label>
+              <textarea
+                id="notes"
+                name="notes"
+                placeholder="Client dinner on Tuesday, team offsite Wednesday morning..."
+                class="min-h-24 w-full resize-y rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30 sm:text-base"
+              ></textarea>
+            </div>
+
+            <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <button
+                type="submit"
+                class="w-full rounded-xl bg-gradient-to-r from-sky to-violet px-4 py-2.5 text-sm font-semibold text-ink transition hover:-translate-y-0.5 sm:w-auto sm:min-w-[10rem]"
+              >
+                Generate itinerary
+              </button>
+              <button
+                type="button"
+                id="save-btn"
+                class="w-full rounded-xl border border-line bg-panel2 px-4 py-2.5 text-sm font-medium text-slate-100 transition hover:-translate-y-0.5 sm:w-auto"
+              >
+                Save plan
+              </button>
+              <button
+                type="button"
+                id="export-pdf-btn"
+                class="w-full rounded-xl border border-solar/35 bg-solar/10 px-4 py-2.5 text-sm font-medium text-amber-200 transition hover:-translate-y-0.5 sm:w-auto"
+              >
+                Export PDF
+              </button>
+              <button
+                type="button"
+                id="reset-btn"
+                class="w-full rounded-xl border border-red-400/35 bg-red-400/10 px-4 py-2.5 text-sm font-medium text-red-300 transition hover:-translate-y-0.5 sm:w-auto"
+              >
+                Reset
+              </button>
+            </div>
+          </form>
+
+          <div id="tips" class="mt-4 rounded-xl border border-sky/20 bg-sky/10 px-3 py-2.5 text-sm text-slate-300">
+            Tip: Keep at least one leisure day after heavy meeting blocks to recover and explore.
+          </div>
+        </section>
+
+        <section class="rounded-2xl border border-line bg-panel/95 p-4 shadow-glow backdrop-blur sm:p-5">
+          <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <h2 class="text-lg font-semibold">Destination map</h2>
+            <p id="map-status" class="text-xs text-mist sm:text-sm">Enter a destination to preview it on the map.</p>
+          </div>
+          <div
+            id="map"
+            class="h-56 w-full overflow-hidden rounded-xl border border-line bg-panel2 sm:h-72 lg:h-80"
+            role="region"
+            aria-label="Destination map"
+          ></div>
+        </section>
+      </div>
+
+      <section class="rounded-2xl border border-line bg-panel/95 p-4 shadow-glow backdrop-blur sm:p-5 lg:col-span-7 xl:col-span-7">
+        <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 class="text-lg font-semibold">Itinerary overview</h2>
+          <button
+            type="button"
+            id="export-pdf-btn-alt"
+            class="w-full rounded-xl border border-solar/35 bg-solar/10 px-4 py-2 text-sm font-medium text-amber-200 transition hover:-translate-y-0.5 sm:w-auto"
+          >
+            Export PDF
+          </button>
+        </div>
+
+        <div class="mb-4 grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
+          <div class="rounded-xl border border-line bg-ink/55 p-3 sm:p-4">
+            <strong id="total-days" class="block text-2xl font-semibold text-sky">0</strong>
+            <span class="text-xs text-mist sm:text-sm">Total days</span>
+          </div>
+          <div class="rounded-xl border border-line bg-ink/55 p-3 sm:p-4">
+            <strong id="summary-business" class="block text-2xl font-semibold text-biz">0</strong>
+            <span class="text-xs text-mist sm:text-sm">Business days</span>
+          </div>
+          <div class="rounded-xl border border-line bg-ink/55 p-3 sm:p-4">
+            <strong id="summary-leisure" class="block text-2xl font-semibold text-fun">0</strong>
+            <span class="text-xs text-mist sm:text-sm">Leisure days</span>
+          </div>
+        </div>
+
+        <div id="day-list" class="day-list max-h-[28rem] space-y-3 overflow-y-auto pr-1 sm:max-h-[34rem] lg:max-h-[calc(100vh-18rem)]">
+          <div class="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-mist">
+            Generate an itinerary to see your day-by-day plan.
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5 xl:mt-6">
+      <section class="rounded-2xl border border-line bg-panel/95 p-4 shadow-glow backdrop-blur sm:p-5">
+        <h2 class="mb-1 text-lg font-semibold">Travel cost estimator</h2>
+        <p class="mb-4 text-sm text-mist">Estimate trip spend and compare conventional lodging with solar-powered stays.</p>
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label for="flight-cost" class="mb-1.5 block text-sm text-mist">Round-trip flights ($)</label>
+            <input id="flight-cost" type="number" min="0" value="650" class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30">
+          </div>
+          <div>
+            <label for="nightly-rate" class="mb-1.5 block text-sm text-mist">Solar hotel nightly rate ($)</label>
+            <input id="nightly-rate" type="number" min="0" value="180" class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30">
+          </div>
+          <div>
+            <label for="business-daily" class="mb-1.5 block text-sm text-mist">Business day spend ($)</label>
+            <input id="business-daily" type="number" min="0" value="95" class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30">
+          </div>
+          <div>
+            <label for="leisure-daily" class="mb-1.5 block text-sm text-mist">Leisure day spend ($)</label>
+            <input id="leisure-daily" type="number" min="0" value="120" class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30">
+          </div>
+          <div class="sm:col-span-2">
+            <label for="transport-daily" class="mb-1.5 block text-sm text-mist">Local transport per day ($)</label>
+            <input id="transport-daily" type="number" min="0" value="35" class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30">
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
+          <div class="rounded-xl border border-line bg-ink/55 p-3">
+            <strong id="cost-conventional" class="block text-xl font-semibold text-slate-200">$0</strong>
+            <span class="text-xs text-mist">Conventional total</span>
+          </div>
+          <div class="rounded-xl border border-solar/30 bg-solar/10 p-3">
+            <strong id="cost-solar" class="block text-xl font-semibold text-amber-200">$0</strong>
+            <span class="text-xs text-mist">Solar stay total</span>
+          </div>
+          <div class="rounded-xl border border-fun/30 bg-emerald-400/10 p-3">
+            <strong id="cost-savings" class="block text-xl font-semibold text-emerald-300">$0</strong>
+            <span class="text-xs text-mist">Estimated savings</span>
+          </div>
+        </div>
+
+        <ul id="cost-breakdown" class="mt-4 space-y-2 text-sm text-slate-300"></ul>
+      </section>
+
+      <section class="rounded-2xl border border-line bg-panel/95 p-4 shadow-glow backdrop-blur sm:p-5">
+        <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold">Solar-powered hotel suggestions</h2>
+            <p class="text-sm text-mist">Eco-certified stays with on-site solar generation.</p>
+          </div>
+          <p id="hotel-status" class="text-xs text-mist sm:text-sm">Generate an itinerary to see hotel picks.</p>
+        </div>
+        <div id="hotel-list" class="space-y-3">
+          <div class="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-mist">
+            Hotel suggestions appear after you generate an itinerary.
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "bleisure-trip-planner-v3";
+    const DEFAULT_CENTER = [38.7223, -9.1393];
+    const DEFAULT_ZOOM = 5;
+
+    const form = document.getElementById("trip-form");
+    const dayList = document.getElementById("day-list");
+    const totalDaysEl = document.getElementById("total-days");
+    const summaryBusinessEl = document.getElementById("summary-business");
+    const summaryLeisureEl = document.getElementById("summary-leisure");
+    const tipsEl = document.getElementById("tips");
+    const mapStatusEl = document.getElementById("map-status");
+
+    const fields = {
+      destination: document.getElementById("destination"),
+      traveler: document.getElementById("traveler"),
+      startDate: document.getElementById("start-date"),
+      endDate: document.getElementById("end-date"),
+      businessDays: document.getElementById("business-days"),
+      leisureDays: document.getElementById("leisure-days"),
+      notes: document.getElementById("notes"),
+    };
+
+    const businessSuggestions = [
+      "Client meetings",
+      "Conference sessions",
+      "Team workshop",
+      "Project review",
+      "Networking lunch",
+    ];
+
+    const leisureSuggestions = [
+      "City walking tour",
+      "Local food market",
+      "Museum visit",
+      "Sunset viewpoint",
+      "Neighborhood coffee crawl",
+    ];
+
+    const SOLAR_HOTELS = {
+      london: [
+        { name: "SunGrid Tower Hotel", nightlyRate: 210, solarCoverage: 88, rating: 4.7, highlight: "Rooftop solar farm covers 88% of daily demand." },
+        { name: "Thames Solar Suites", nightlyRate: 185, solarCoverage: 76, rating: 4.5, highlight: "Battery-backed solar microgrid for guest floors." },
+        { name: "Greenwich Helios Inn", nightlyRate: 165, solarCoverage: 92, rating: 4.4, highlight: "Net-zero lobby powered entirely by solar canopy." },
+      ],
+      lisbon: [
+        { name: "Alfama Sol Stay", nightlyRate: 145, solarCoverage: 81, rating: 4.6, highlight: "Historic building retrofitted with solar roof tiles." },
+        { name: "Tagus Helios Hotel", nightlyRate: 175, solarCoverage: 90, rating: 4.7, highlight: "Harbor-view property with 90% solar energy mix." },
+        { name: "Baixa Sun Rooms", nightlyRate: 130, solarCoverage: 74, rating: 4.3, highlight: "Compact solar hotel ideal for bleisure trips." },
+      ],
+      paris: [
+        { name: "Seine Solar Maison", nightlyRate: 220, solarCoverage: 70, rating: 4.5, highlight: "Facade-integrated solar panels reduce grid draw." },
+        { name: "Montmartre Helios", nightlyRate: 195, solarCoverage: 83, rating: 4.6, highlight: "Hybrid solar-thermal system for hot water." },
+        { name: "Left Bank Sun Hotel", nightlyRate: 205, solarCoverage: 79, rating: 4.4, highlight: "Smart energy dashboard in every room." },
+      ],
+      default: [
+        { name: "Helios Urban Hotel", nightlyRate: 160, solarCoverage: 80, rating: 4.4, highlight: "Solar canopy over the rooftop lounge." },
+        { name: "SunStay City Collection", nightlyRate: 140, solarCoverage: 72, rating: 4.3, highlight: "Certified green stay with on-site solar array." },
+        { name: "EcoGrid Boutique Inn", nightlyRate: 155, solarCoverage: 85, rating: 4.5, highlight: "High solar coverage with low overnight rates." },
+      ],
+    };
+
+    const CONVENTIONAL_PREMIUM = 0.18;
+    const SOLAR_ENERGY_DISCOUNT = 0.12;
+    const CO2_KG_PER_NIGHT = 11.5;
+
+    const costFields = {
+      flight: document.getElementById("flight-cost"),
+      nightly: document.getElementById("nightly-rate"),
+      businessDaily: document.getElementById("business-daily"),
+      leisureDaily: document.getElementById("leisure-daily"),
+      transportDaily: document.getElementById("transport-daily"),
+    };
+
+    const costConventionalEl = document.getElementById("cost-conventional");
+    const costSolarEl = document.getElementById("cost-solar");
+    const costSavingsEl = document.getElementById("cost-savings");
+    const costBreakdownEl = document.getElementById("cost-breakdown");
+    const hotelListEl = document.getElementById("hotel-list");
+    const hotelStatusEl = document.getElementById("hotel-status");
+
+    let currentHotels = [];
+    let latestCostEstimate = null;
+
+    let currentDays = [];
+    let mapInstance = null;
+    let destinationMarker = null;
+    let geocodeTimer = null;
+    let geocodeRequestId = 0;
+    let lastGeocodedDestination = "";
+
+    const mapInstanceRef = L.map("map", {
+      scrollWheelZoom: false,
+      tap: true,
+    }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+
+    mapInstance = mapInstanceRef;
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(mapInstance);
+
+    function parseDate(value) {
+      const [year, month, day] = value.split("-").map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    function formatDate(date) {
+      return date.toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      });
+    }
+
+    function dayCount(start, end) {
+      const msPerDay = 24 * 60 * 60 * 1000;
+      return Math.round((end - start) / msPerDay) + 1;
+    }
+
+    function escapeHtml(value) {
+      return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function getFormData() {
+      return {
+        destination: fields.destination.value.trim(),
+        traveler: fields.traveler.value.trim(),
+        startDate: fields.startDate.value,
+        endDate: fields.endDate.value,
+        businessDays: Number(fields.businessDays.value || 0),
+        leisureDays: Number(fields.leisureDays.value || 0),
+        notes: fields.notes.value.trim(),
+      };
+    }
+
+    function validateTrip(data) {
+      if (!data.destination) {
+        throw new Error("Destination is required.");
+      }
+      if (!data.startDate || !data.endDate) {
+        throw new Error("Start and end dates are required.");
+      }
+
+      const start = parseDate(data.startDate);
+      const end = parseDate(data.endDate);
+      if (end < start) {
+        throw new Error("End date must be on or after the start date.");
+      }
+
+      const total = dayCount(start, end);
+      if (data.businessDays + data.leisureDays > total) {
+        throw new Error("Business and leisure days cannot exceed total trip length.");
+      }
+
+      return { start, end, total };
+    }
+
+    function buildDayPlan(start, total, businessDays, leisureDays) {
+      const days = [];
+      const businessSlots = Array.from({ length: businessDays }, (_, index) => index);
+      const leisureSlots = Array.from({ length: leisureDays }, (_, index) => total - leisureDays + index);
+
+      for (let index = 0; index < total; index += 1) {
+        const date = new Date(start);
+        date.setDate(start.getDate() + index);
+
+        let type = "open";
+        if (businessSlots.includes(index)) {
+          type = "business";
+        } else if (leisureSlots.includes(index)) {
+          type = "leisure";
+        }
+
+        const suggestions = type === "business"
+          ? businessSuggestions
+          : type === "leisure"
+            ? leisureSuggestions
+            : ["Travel day", "Buffer / admin", "Explore at your pace"];
+
+        days.push({
+          index,
+          date: date.toISOString().slice(0, 10),
+          label: formatDate(date),
+          type,
+          activities: [suggestions[index % suggestions.length]],
+        });
+      }
+
+      return days;
+    }
+
+    function formatMoney(amount) {
+      return new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      }).format(amount);
+    }
+
+    function destinationKey(destination) {
+      const value = destination.toLowerCase();
+      if (value.includes("london")) return "london";
+      if (value.includes("lisbon")) return "lisbon";
+      if (value.includes("paris")) return "paris";
+      return "default";
+    }
+
+    function getSolarHotels(destination) {
+      return SOLAR_HOTELS[destinationKey(destination)] || SOLAR_HOTELS.default;
+    }
+
+    function averageHotelRate(hotels) {
+      if (!hotels.length) return 160;
+      return Math.round(hotels.reduce((sum, hotel) => sum + hotel.nightlyRate, 0) / hotels.length);
+    }
+
+    function renderHotels(destination) {
+      currentHotels = getSolarHotels(destination);
+      const avgRate = averageHotelRate(currentHotels);
+      costFields.nightly.value = String(avgRate);
+      hotelStatusEl.textContent = `${currentHotels.length} solar stays near ${destination}`;
+
+      hotelListEl.innerHTML = currentHotels.map((hotel) => `
+        <article class="rounded-xl border border-line bg-ink/45 p-3 sm:p-4">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 class="font-semibold">${escapeHtml(hotel.name)}</h3>
+              <p class="mt-1 text-sm text-mist">${escapeHtml(hotel.highlight)}</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span class="rounded-full bg-solar/15 px-2.5 py-1 text-xs font-semibold text-amber-200">${hotel.solarCoverage}% solar</span>
+              <span class="rounded-full bg-sky/15 px-2.5 py-1 text-xs font-semibold text-sky">${formatMoney(hotel.nightlyRate)}/night</span>
+            </div>
+          </div>
+          <p class="mt-2 text-xs text-mist">Guest rating ${hotel.rating.toFixed(1)} / 5</p>
+        </article>
+      `).join("");
+    }
+
+    function estimateCosts(data, total) {
+      const nights = Math.max(total - 1, 1);
+      const openDays = Math.max(total - data.businessDays - data.leisureDays, 0);
+      const flight = Number(costFields.flight.value || 0);
+      const nightly = Number(costFields.nightly.value || 0);
+      const businessDaily = Number(costFields.businessDaily.value || 0);
+      const leisureDaily = Number(costFields.leisureDaily.value || 0);
+      const transportDaily = Number(costFields.transportDaily.value || 0);
+
+      const conventionalNightly = nightly * (1 + CONVENTIONAL_PREMIUM);
+      const lodgingConventional = conventionalNightly * nights;
+      const lodgingSolar = nightly * nights;
+      const meals = (data.businessDays * businessDaily) + (data.leisureDays * leisureDaily) + (openDays * ((businessDaily + leisureDaily) / 2));
+      const transport = transportDaily * total;
+      const avgSolarCoverage = currentHotels.length
+        ? currentHotels.reduce((sum, hotel) => sum + hotel.solarCoverage, 0) / currentHotels.length
+        : 80;
+      const energyCredit = lodgingSolar * SOLAR_ENERGY_DISCOUNT * (avgSolarCoverage / 100);
+      const carbonAvoidedKg = Math.round(nights * CO2_KG_PER_NIGHT * (avgSolarCoverage / 100));
+
+      const conventionalTotal = flight + lodgingConventional + meals + transport;
+      const solarTotal = Math.max(flight + lodgingSolar + meals + transport - energyCredit, 0);
+      const savings = Math.max(conventionalTotal - solarTotal, 0);
+
+      latestCostEstimate = {
+        nights,
+        flight,
+        lodgingConventional,
+        lodgingSolar,
+        meals,
+        transport,
+        energyCredit,
+        carbonAvoidedKg,
+        conventionalTotal,
+        solarTotal,
+        savings,
+        avgSolarCoverage,
+      };
+
+      costConventionalEl.textContent = formatMoney(conventionalTotal);
+      costSolarEl.textContent = formatMoney(solarTotal);
+      costSavingsEl.textContent = formatMoney(savings);
+
+      costBreakdownEl.innerHTML = [
+        `<li>Lodging: ${formatMoney(lodgingConventional)} conventional vs ${formatMoney(lodgingSolar)} solar</li>`,
+        `<li>Meals &amp; activities: ${formatMoney(meals)} across ${total} day(s)</li>`,
+        `<li>Flights + local transport: ${formatMoney(flight + transport)}</li>`,
+        `<li>Solar energy credit: -${formatMoney(energyCredit)} (${Math.round(avgSolarCoverage)}% avg solar coverage)</li>`,
+        `<li>Estimated carbon avoided: ${carbonAvoidedKg} kg CO₂ by choosing solar stays</li>`,
+      ].join("");
+    }
+
+    function updateCostEstimator(data, total) {
+      if (!currentHotels.length) {
+        renderHotels(data.destination);
+      }
+      estimateCosts(data, total);
+    }
+
+    function getCostInputs() {
+      return {
+        flight: Number(costFields.flight.value || 0),
+        nightly: Number(costFields.nightly.value || 0),
+        businessDaily: Number(costFields.businessDaily.value || 0),
+        leisureDaily: Number(costFields.leisureDaily.value || 0),
+        transportDaily: Number(costFields.transportDaily.value || 0),
+      };
+    }
+
+    function exportItineraryPdf() {
+      if (!currentDays.length) {
+        tipsEl.textContent = "Generate an itinerary before exporting to PDF.";
+        return;
+      }
+
+      const data = getFormData();
+      const { total } = validateTrip(data);
+      updateCostEstimator(data, total);
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: "pt", format: "letter" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 48;
+      const contentWidth = pageWidth - margin * 2;
+      const bottomLimit = pageHeight - 56;
+      let y = 0;
+
+      const colors = {
+        ink: [15, 20, 25],
+        panel: [26, 35, 50],
+        mist: [148, 163, 184],
+        sky: [56, 189, 248],
+        business: [245, 158, 11],
+        leisure: [52, 211, 153],
+        solar: [251, 191, 36],
+        text: [30, 41, 59],
+        line: [203, 213, 225],
+      };
+
+      function setTextColor(rgb) {
+        doc.setTextColor(rgb[0], rgb[1], rgb[2]);
+      }
+
+      function setDrawColor(rgb) {
+        doc.setDrawColor(rgb[0], rgb[1], rgb[2]);
+      }
+
+      function setFillColor(rgb) {
+        doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+      }
+
+      function wrapText(text, width, fontSize = 10) {
+        doc.setFontSize(fontSize);
+        return doc.splitTextToSize(text, width);
+      }
+
+      function drawPageHeader(isFirstPage) {
+        const bandHeight = isFirstPage ? 78 : 34;
+        setFillColor(colors.ink);
+        doc.rect(0, 0, pageWidth, bandHeight, "F");
+
+        setTextColor([255, 255, 255]);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(isFirstPage ? 22 : 12);
+        doc.text("Bleisure Trip Planner", margin, isFirstPage ? 34 : 21);
+
+        if (isFirstPage) {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10);
+          setTextColor(colors.mist);
+          doc.text("Business + Leisure travel plan", margin, 52);
+          doc.text(new Date().toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }), pageWidth - margin, 52, { align: "right" });
+        }
+
+        y = bandHeight + 22;
+      }
+
+      function ensureSpace(needed) {
+        if (y + needed > bottomLimit) {
+          doc.addPage();
+          drawPageHeader(false);
+        }
+      }
+
+      function drawSectionTitle(title) {
+        ensureSpace(34);
+        setTextColor(colors.text);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13);
+        doc.text(title, margin, y);
+        y += 8;
+        setDrawColor(colors.sky);
+        doc.setLineWidth(1.5);
+        doc.line(margin, y, margin + 72, y);
+        y += 18;
+      }
+
+      function drawStatBoxes() {
+        const boxWidth = (contentWidth - 16) / 3;
+        const boxHeight = 46;
+        ensureSpace(boxHeight + 8);
+
+        const stats = [
+          { label: "Total days", value: String(total), color: colors.sky },
+          { label: "Business", value: String(data.businessDays), color: colors.business },
+          { label: "Leisure", value: String(data.leisureDays), color: colors.leisure },
+        ];
+
+        stats.forEach((stat, index) => {
+          const x = margin + index * (boxWidth + 8);
+          setFillColor([248, 250, 252]);
+          setDrawColor(colors.line);
+          doc.setLineWidth(0.75);
+          doc.roundedRect(x, y, boxWidth, boxHeight, 6, 6, "FD");
+          setTextColor(stat.color);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(18);
+          doc.text(stat.value, x + 12, y + 24);
+          setTextColor(colors.mist);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          doc.text(stat.label, x + 12, y + 38);
+        });
+
+        y += boxHeight + 18;
+      }
+
+      function drawTripSummary() {
+        drawSectionTitle("Trip summary");
+        ensureSpace(88);
+
+        setFillColor([248, 250, 252]);
+        setDrawColor(colors.line);
+        doc.setLineWidth(0.75);
+        doc.roundedRect(margin, y, contentWidth, 82, 8, 8, "FD");
+
+        const leftX = margin + 14;
+        const rightX = margin + contentWidth / 2 + 4;
+        const baseY = y + 22;
+        const rows = [
+          ["Traveler", data.traveler || "Guest"],
+          ["Destination", data.destination],
+          ["Dates", `${data.startDate} to ${data.endDate}`],
+        ];
+
+        rows.forEach((row, index) => {
+          const lineY = baseY + index * 18;
+          setTextColor(colors.mist);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          doc.text(row[0], leftX, lineY);
+          setTextColor(colors.text);
+          doc.setFont("helvetica", index === 1 ? "bold" : "normal");
+          doc.setFontSize(10);
+          doc.text(row[1], leftX + 62, lineY);
+        });
+
+        if (data.notes) {
+          setTextColor(colors.mist);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          doc.text("Notes", rightX, baseY);
+          const noteLines = wrapText(data.notes, contentWidth / 2 - 28, 9);
+          setTextColor(colors.text);
+          doc.text(noteLines.slice(0, 3), rightX, baseY + 14);
+        }
+
+        y += 96;
+      }
+
+      function dayAccentColor(type) {
+        if (type === "business") return colors.business;
+        if (type === "leisure") return colors.leisure;
+        return colors.mist;
+      }
+
+      function drawItinerarySection() {
+        drawSectionTitle("Day-by-day itinerary");
+
+        currentDays.forEach((day) => {
+          const activityLines = day.activities.flatMap((activity) => {
+            const prefix = "- ";
+            return wrapText(`${prefix}${activity || "Open time"}`, contentWidth - 36, 10);
+          });
+          const blockHeight = 30 + activityLines.length * 13;
+          ensureSpace(blockHeight + 8);
+
+          const blockTop = y;
+          setFillColor([255, 255, 255]);
+          setDrawColor(colors.line);
+          doc.setLineWidth(0.75);
+          doc.roundedRect(margin, blockTop, contentWidth, blockHeight, 6, 6, "FD");
+
+          setFillColor(dayAccentColor(day.type));
+          doc.rect(margin, blockTop, 4, blockHeight, "F");
+
+          setTextColor(colors.text);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(11);
+          doc.text(day.label, margin + 14, blockTop + 18);
+
+          const badge = day.type === "open" ? "FLEXIBLE" : day.type.toUpperCase();
+          setTextColor(dayAccentColor(day.type));
+          doc.setFontSize(8);
+          doc.text(badge, pageWidth - margin - 14, blockTop + 18, { align: "right" });
+
+          setTextColor(colors.mist);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8);
+          doc.text(day.date, margin + 14, blockTop + 30);
+
+          setTextColor(colors.text);
+          doc.setFontSize(10);
+          doc.text(activityLines, margin + 14, blockTop + 46);
+
+          y = blockTop + blockHeight + 10;
+        });
+      }
+
+      function drawHotelsSection() {
+        drawSectionTitle("Solar-powered hotel suggestions");
+
+        currentHotels.forEach((hotel) => {
+          const detailLines = wrapText(hotel.highlight, contentWidth - 28, 9);
+          const blockHeight = 54 + detailLines.length * 11;
+          ensureSpace(blockHeight + 8);
+
+          const blockTop = y;
+          setFillColor([255, 251, 235]);
+          setDrawColor([251, 191, 36]);
+          doc.setLineWidth(0.75);
+          doc.roundedRect(margin, blockTop, contentWidth, blockHeight, 6, 6, "FD");
+
+          setTextColor(colors.text);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(11);
+          doc.text(hotel.name, margin + 12, blockTop + 18);
+
+          setTextColor([146, 64, 14]);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          const meta = `${formatMoney(hotel.nightlyRate)}/night   |   ${hotel.solarCoverage}% solar   |   ${hotel.rating.toFixed(1)} / 5`;
+          doc.text(meta, margin + 12, blockTop + 32);
+
+          setTextColor(colors.text);
+          doc.text(detailLines, margin + 12, blockTop + 46);
+
+          y = blockTop + blockHeight + 10;
+        });
+      }
+
+      function drawCostSection() {
+        if (!latestCostEstimate) {
+          return;
+        }
+
+        drawSectionTitle("Travel cost estimate");
+        const estimate = latestCostEstimate;
+        const rows = [
+          ["Flights", formatMoney(estimate.flight)],
+          ["Lodging (conventional)", formatMoney(estimate.lodgingConventional)],
+          ["Lodging (solar stay)", formatMoney(estimate.lodgingSolar)],
+          ["Meals & activities", formatMoney(estimate.meals)],
+          ["Local transport", formatMoney(estimate.transport)],
+          ["Solar energy credit", `-${formatMoney(estimate.energyCredit)}`],
+        ];
+
+        const tableTop = y;
+        const rowHeight = 20;
+        const tableHeight = rowHeight * (rows.length + 3) + 12;
+        ensureSpace(tableHeight + 8);
+
+        setFillColor([255, 255, 255]);
+        setDrawColor(colors.line);
+        doc.setLineWidth(0.75);
+        doc.roundedRect(margin, tableTop, contentWidth, tableHeight, 8, 8, "FD");
+
+        let rowY = tableTop + 24;
+        rows.forEach(([label, value]) => {
+          setTextColor(colors.mist);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          doc.text(label, margin + 14, rowY);
+          setTextColor(colors.text);
+          doc.text(value, pageWidth - margin - 14, rowY, { align: "right" });
+          rowY += rowHeight;
+        });
+
+        setDrawColor(colors.line);
+        doc.line(margin + 12, rowY - 6, pageWidth - margin - 12, rowY - 6);
+
+        const totals = [
+          ["Conventional total", formatMoney(estimate.conventionalTotal), colors.text],
+          ["Solar stay total", formatMoney(estimate.solarTotal), [180, 83, 9]],
+          ["Estimated savings", formatMoney(estimate.savings), [5, 150, 105]],
+        ];
+
+        totals.forEach(([label, value, color]) => {
+          setTextColor(colors.mist);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(label === "Estimated savings" ? 10 : 9);
+          doc.text(label, margin + 14, rowY);
+          setTextColor(color);
+          doc.text(value, pageWidth - margin - 14, rowY, { align: "right" });
+          rowY += rowHeight;
+        });
+
+        y = tableTop + tableHeight + 10;
+        ensureSpace(18);
+        setTextColor(colors.mist);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text(
+          `Estimated carbon avoided: ${estimate.carbonAvoidedKg} kg CO2 by choosing solar-powered stays.`,
+          margin,
+          y,
+        );
+        y += 18;
+      }
+
+      function drawFooters() {
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let page = 1; page <= totalPages; page += 1) {
+          doc.setPage(page);
+          setDrawColor(colors.line);
+          doc.setLineWidth(0.5);
+          doc.line(margin, pageHeight - 36, pageWidth - margin, pageHeight - 36);
+          setTextColor(colors.mist);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8);
+          doc.text("Bleisure Trip Planner", margin, pageHeight - 20);
+          doc.text(`Page ${page} of ${totalPages}`, pageWidth - margin, pageHeight - 20, { align: "right" });
+        }
+      }
+
+      drawPageHeader(true);
+      drawStatBoxes();
+      drawTripSummary();
+      drawItinerarySection();
+      drawHotelsSection();
+      drawCostSection();
+      drawFooters();
+
+      const safeDestination = data.destination.replace(/[^\w.-]+/g, "_");
+      doc.save(`bleisure-trip-${safeDestination}.pdf`);
+      tipsEl.textContent = "Itinerary exported as PDF.";
+    }
+
+    function badgeClasses(type) {
+      if (type === "business") {
+        return "bg-amber-400/15 text-amber-200";
+      }
+      if (type === "leisure") {
+        return "bg-emerald-400/15 text-emerald-200";
+      }
+      return "bg-slate-400/15 text-slate-200";
+    }
+
+    function renderDays(days) {
+      if (!days.length) {
+        dayList.innerHTML = `
+          <div class="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-mist">
+            Generate an itinerary to see your day-by-day plan.
+          </div>
+        `;
+        return;
+      }
+
+      dayList.innerHTML = days.map((day) => {
+        const badgeLabel = day.type === "open" ? "Flexible" : day.type;
+
+        const activities = day.activities.map((activity, activityIndex) => `
+          <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              type="text"
+              value="${escapeHtml(activity)}"
+              data-day-index="${day.index}"
+              data-activity-index="${activityIndex}"
+              aria-label="Activity for ${day.label}"
+              class="w-full flex-1 rounded-xl border border-line bg-panel2 px-3 py-2 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30"
+            >
+            <button
+              type="button"
+              data-remove-day="${day.index}"
+              data-remove-activity="${activityIndex}"
+              class="w-full rounded-xl border border-red-400/35 bg-red-400/10 px-3 py-2 text-sm font-medium text-red-300 transition hover:-translate-y-0.5 sm:w-auto sm:shrink-0"
+            >
+              Remove
+            </button>
+          </div>
+        `).join("");
+
+        return `
+          <article class="rounded-xl border border-line bg-ink/45 p-3 sm:p-4" data-day-index="${day.index}">
+            <header class="mb-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <div class="font-semibold">${day.label}</div>
+                <div class="text-xs text-mist sm:text-sm">${day.date}</div>
+              </div>
+              <span class="inline-flex w-fit rounded-full px-2.5 py-1 text-[0.7rem] font-bold uppercase tracking-wide ${badgeClasses(day.type)}">
+                ${badgeLabel}
+              </span>
+            </header>
+            ${activities}
+            <div class="mt-3">
+              <button
+                type="button"
+                data-add-activity="${day.index}"
+                class="w-full rounded-xl border border-line bg-panel2 px-3 py-2 text-sm font-medium transition hover:-translate-y-0.5 sm:w-auto"
+              >
+                Add activity
+              </button>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function updateSummary(total, businessDays, leisureDays) {
+      totalDaysEl.textContent = String(total);
+      summaryBusinessEl.textContent = String(businessDays);
+      summaryLeisureEl.textContent = String(leisureDays);
+    }
+
+    function updateTips(total, businessDays, leisureDays) {
+      const openDays = total - businessDays - leisureDays;
+      if (openDays > 0) {
+        tipsEl.textContent = `You have ${openDays} flexible day(s). Use them for travel buffers or spontaneous plans.`;
+        return;
+      }
+      if (businessDays > leisureDays) {
+        tipsEl.textContent = "Meeting-heavy trip detected. Consider adding a recovery block on your last day.";
+        return;
+      }
+      tipsEl.textContent = "Balanced bleisure split. Block focus time in the mornings and keep evenings open.";
+    }
+
+    function clearDestinationMarker() {
+      if (!destinationMarker) {
+        return;
+      }
+      mapInstance.removeLayer(destinationMarker);
+      destinationMarker = null;
+    }
+
+    function setMapMarker(lat, lon, label) {
+      const coords = [lat, lon];
+      if (destinationMarker) {
+        destinationMarker.setLatLng(coords).setPopupContent(label);
+      } else {
+        destinationMarker = L.marker(coords).addTo(mapInstance).bindPopup(label);
+      }
+      mapInstance.setView(coords, 12, { animate: true });
+      destinationMarker.openPopup();
+    }
+
+    async function geocodeDestination(destination, { quiet = false } = {}) {
+      const query = destination.trim();
+      if (!query) {
+        mapStatusEl.textContent = "Enter a destination to preview it on the map.";
+        return null;
+      }
+
+      const requestId = ++geocodeRequestId;
+
+      if (!quiet) {
+        mapStatusEl.textContent = `Locating ${query}...`;
+      }
+
+      const url = new URL("https://nominatim.openstreetmap.org/search");
+      url.searchParams.set("q", query);
+      url.searchParams.set("format", "json");
+      url.searchParams.set("limit", "1");
+      url.searchParams.set("cb", String(Date.now()));
+
+      let response;
+      try {
+        response = await fetch(url.toString(), {
+          headers: {
+            Accept: "application/json",
+          },
+        });
+      } catch {
+        if (requestId !== geocodeRequestId) {
+          return null;
+        }
+        throw new Error("Map lookup failed. Check your connection and try again.");
+      }
+
+      if (requestId !== geocodeRequestId) {
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new Error("Could not load map location. Try again in a moment.");
+      }
+
+      const results = await response.json();
+      if (!results.length) {
+        mapStatusEl.textContent = `No map match found for "${query}". Try a city and country.`;
+        return null;
+      }
+
+      const match = results[0];
+      const label = `<strong>${escapeHtml(query)}</strong><br>${escapeHtml(match.display_name)}`;
+      setMapMarker(Number(match.lat), Number(match.lon), label);
+      mapStatusEl.textContent = `Showing ${query} on the map.`;
+      lastGeocodedDestination = query;
+      return {
+        lat: Number(match.lat),
+        lon: Number(match.lon),
+        displayName: match.display_name,
+      };
+    }
+
+    function cancelScheduledGeocode() {
+      clearTimeout(geocodeTimer);
+      geocodeTimer = null;
+    }
+
+    function scheduleGeocode() {
+      cancelScheduledGeocode();
+      geocodeTimer = setTimeout(() => {
+        const destination = fields.destination.value.trim();
+        if (!destination || destination === lastGeocodedDestination) {
+          return;
+        }
+        geocodeDestination(destination, { quiet: true }).catch(() => {
+          mapStatusEl.textContent = "Map lookup failed. Check the destination spelling.";
+        });
+      }, 700);
+    }
+
+    async function generateItinerary() {
+      cancelScheduledGeocode();
+      const data = getFormData();
+      const { start, total } = validateTrip(data);
+      currentDays = buildDayPlan(start, total, data.businessDays, data.leisureDays);
+      renderDays(currentDays);
+      updateSummary(total, data.businessDays, data.leisureDays);
+      updateTips(total, data.businessDays, data.leisureDays);
+      renderHotels(data.destination);
+      updateCostEstimator(data, total);
+
+      const location = await geocodeDestination(data.destination);
+      if (!location) {
+        clearDestinationMarker();
+        mapInstance.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+        lastGeocodedDestination = "";
+      }
+      return location;
+    }
+
+    function savePlan() {
+      const data = getFormData();
+      validateTrip(data);
+      const payload = {
+        ...data,
+        days: currentDays,
+        costs: getCostInputs(),
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      tipsEl.textContent = "Plan saved locally in this browser.";
+    }
+
+    async function loadPlan() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        return;
+      }
+
+      try {
+        const saved = JSON.parse(raw);
+        fields.destination.value = saved.destination || "";
+        fields.traveler.value = saved.traveler || "";
+        fields.startDate.value = saved.startDate || "";
+        fields.endDate.value = saved.endDate || "";
+        fields.businessDays.value = saved.businessDays ?? 0;
+        fields.leisureDays.value = saved.leisureDays ?? 0;
+        fields.notes.value = saved.notes || "";
+        currentDays = saved.days || [];
+        renderDays(currentDays);
+
+        if (saved.costs) {
+          costFields.flight.value = saved.costs.flight ?? costFields.flight.value;
+          costFields.nightly.value = saved.costs.nightly ?? costFields.nightly.value;
+          costFields.businessDaily.value = saved.costs.businessDaily ?? costFields.businessDaily.value;
+          costFields.leisureDaily.value = saved.costs.leisureDaily ?? costFields.leisureDaily.value;
+          costFields.transportDaily.value = saved.costs.transportDaily ?? costFields.transportDaily.value;
+        }
+
+        if (saved.startDate && saved.endDate) {
+          const { total } = validateTrip(getFormData());
+          updateSummary(total, Number(saved.businessDays || 0), Number(saved.leisureDays || 0));
+          updateTips(total, Number(saved.businessDays || 0), Number(saved.leisureDays || 0));
+          renderHotels(saved.destination || fields.destination.value);
+          updateCostEstimator(getFormData(), total);
+        }
+
+        if (saved.destination) {
+          await geocodeDestination(saved.destination, { quiet: true });
+        }
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+
+    function resetPlan() {
+      form.reset();
+      currentDays = [];
+      currentHotels = [];
+      latestCostEstimate = null;
+      renderDays(currentDays);
+      updateSummary(0, 0, 0);
+      localStorage.removeItem(STORAGE_KEY);
+      tipsEl.textContent = "Planner reset. Start a fresh bleisure itinerary.";
+      lastGeocodedDestination = "";
+
+      hotelListEl.innerHTML = `
+        <div class="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-mist">
+          Hotel suggestions appear after you generate an itinerary.
+        </div>
+      `;
+      hotelStatusEl.textContent = "Generate an itinerary to see hotel picks.";
+      costConventionalEl.textContent = formatMoney(0);
+      costSolarEl.textContent = formatMoney(0);
+      costSavingsEl.textContent = formatMoney(0);
+      costBreakdownEl.innerHTML = "";
+
+      clearDestinationMarker();
+      mapInstance.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+      mapStatusEl.textContent = "Enter a destination to preview it on the map.";
+
+      const today = new Date();
+      fields.startDate.value = today.toISOString().slice(0, 10);
+      fields.endDate.value = new Date(today.getTime() + 4 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    }
+
+    dayList.addEventListener("input", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) {
+        return;
+      }
+      const dayIndex = Number(target.dataset.dayIndex);
+      const activityIndex = Number(target.dataset.activityIndex);
+      if (!Number.isInteger(dayIndex) || !Number.isInteger(activityIndex)) {
+        return;
+      }
+      currentDays[dayIndex].activities[activityIndex] = target.value;
+    });
+
+    dayList.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      const addDayIndex = target.dataset.addActivity;
+      if (addDayIndex !== undefined) {
+        const dayIndex = Number(addDayIndex);
+        currentDays[dayIndex].activities.push("New activity");
+        renderDays(currentDays);
+        return;
+      }
+
+      const removeDayIndex = target.dataset.removeDay;
+      const removeActivityIndex = target.dataset.removeActivity;
+      if (removeDayIndex !== undefined && removeActivityIndex !== undefined) {
+        const dayIndex = Number(removeDayIndex);
+        const activityIndex = Number(removeActivityIndex);
+        currentDays[dayIndex].activities.splice(activityIndex, 1);
+        if (!currentDays[dayIndex].activities.length) {
+          currentDays[dayIndex].activities.push("");
+        }
+        renderDays(currentDays);
+      }
+    });
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      generateItinerary().catch((error) => {
+        tipsEl.textContent = error.message;
+        mapStatusEl.textContent = error.message;
+      });
+    });
+
+    document.getElementById("save-btn").addEventListener("click", () => {
+      try {
+        savePlan();
+      } catch (error) {
+        tipsEl.textContent = error.message;
+      }
+    });
+
+    document.getElementById("reset-btn").addEventListener("click", resetPlan);
+    document.getElementById("export-pdf-btn").addEventListener("click", exportItineraryPdf);
+    document.getElementById("export-pdf-btn-alt").addEventListener("click", exportItineraryPdf);
+    fields.destination.addEventListener("input", scheduleGeocode);
+
+    Object.values(costFields).forEach((field) => {
+      field.addEventListener("input", () => {
+        if (!currentDays.length) {
+          return;
+        }
+        try {
+          const data = getFormData();
+          const { total } = validateTrip(data);
+          estimateCosts(data, total);
+        } catch {
+          // Ignore partial input while the user is editing cost fields.
+        }
+      });
+    });
+
+    window.addEventListener("resize", () => {
+      mapInstance.invalidateSize();
+    });
+
+    const today = new Date();
+    fields.startDate.value = today.toISOString().slice(0, 10);
+    fields.endDate.value = new Date(today.getTime() + 4 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    fields.destination.value = "Lisbon, Portugal";
+
+    loadPlan().finally(() => {
+      if (!currentDays.length) {
+        generateItinerary().catch(() => {
+          tipsEl.textContent = "Set your trip details and generate an itinerary.";
+        });
+      } else {
+        mapInstance.invalidateSize();
+      }
+    });
+
+    setTimeout(() => mapInstance.invalidateSize(), 150);
+  </script>
+</body>
+</html>
