@@ -72,7 +72,19 @@ export type ActivityCategory =
   | "coffee"
   | "business"
   | "explore"
+  | "parks"
+  | "nightlife"
+  | "spa"
   | "default";
+
+export type SuggestionCategory =
+  | "biking"
+  | "hiking"
+  | "city-tours"
+  | "museums"
+  | "parks"
+  | "nightlife"
+  | "spa";
 
 export type HikingVendorKind = "guided-tour" | "gear-rental" | "general";
 

@@ -6,6 +6,7 @@ import { exportItineraryPdf } from "@/lib/pdf";
 import { normalizeTripForm, validateTrip } from "@/lib/trip";
 import { useTripStore } from "@/store/trip-store";
 import { DayCard } from "@/components/planner/DayCard";
+import { ActivitySuggestions } from "@/components/planner/ActivitySuggestions";
 
 function badgeClasses(type: string) {
   if (type === "business") return "bg-amber-400/15 text-amber-200";
@@ -20,6 +21,7 @@ export function ItineraryOverview({ className = "" }: { className?: string }) {
   const costEstimate = useTripStore((state) => state.costEstimate);
   const updateActivity = useTripStore((state) => state.updateActivity);
   const addActivity = useTripStore((state) => state.addActivity);
+  const appendActivityToDay = useTripStore((state) => state.appendActivityToDay);
   const removeActivity = useTripStore((state) => state.removeActivity);
 
   let total = 0;
@@ -56,6 +58,14 @@ export function ItineraryOverview({ className = "" }: { className?: string }) {
         <Stat value={String(trip.businessDays)} label="Business days" valueClass="text-biz" />
         <Stat value={String(trip.leisureDays)} label="Leisure days" valueClass="text-fun" />
       </div>
+
+      {days.length ? (
+        <ActivitySuggestions
+          destination={trip.destination}
+          days={days}
+          onAddToDay={appendActivityToDay}
+        />
+      ) : null}
 
       <div id="day-list" className="day-list max-h-[32rem] space-y-3 overflow-y-auto pr-1 sm:max-h-[40rem] lg:max-h-[calc(100vh-16rem)]">
         {!days.length ? (

@@ -41,6 +41,7 @@ interface TripState {
   setStatusMessage: (message: string) => void;
   updateActivity: (dayIndex: number, activityIndex: number, value: string) => void;
   addActivity: (dayIndex: number) => void;
+  appendActivityToDay: (dayIndex: number, activity: string) => void;
   removeActivity: (dayIndex: number, activityIndex: number) => void;
   generateItinerary: () => Promise<void>;
   saveCurrentTrip: () => boolean;
@@ -135,6 +136,30 @@ export const useTripStore = create<TripState>()(
               : day,
           ),
         })),
+
+      appendActivityToDay: (dayIndex, activity) => {
+        const trimmed = activity.trim();
+        if (!trimmed) return;
+
+        set((state) => ({
+          days: state.days.map((day) => {
+            if (day.index !== dayIndex) return day;
+
+            const hasBlankOnly =
+              day.activities.length === 1 && day.activities[0].trim() === "";
+
+            if (hasBlankOnly) {
+              return { ...day, activities: [trimmed] };
+            }
+
+            if (day.activities.includes(trimmed)) {
+              return day;
+            }
+
+            return { ...day, activities: [...day.activities, trimmed] };
+          }),
+        }));
+      },
 
       removeActivity: (dayIndex, activityIndex) =>
         set((state) => ({
