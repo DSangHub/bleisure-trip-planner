@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "serve:static": "serve out",
+    "serve:static": "node scripts/serve-static.mjs",
+    "serve:static:serve": "serve out -l tcp://0.0.0.0:3000 -c serve.json",
+    "serve:static:python": "python3 scripts/serve-static.py",
     "lint": "next lint"
   },
   "dependencies": {

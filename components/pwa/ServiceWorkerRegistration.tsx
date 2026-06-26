@@ -2,28 +2,42 @@
 
 import { useEffect } from "react";
 
+function canRegisterServiceWorker() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  if (!("serviceWorker" in navigator)) {
+    return false;
+  }
+
+  const { protocol, hostname } = window.location;
+  const isHttp = protocol === "http:" || protocol === "https:";
+  const isLocalhost =
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "[::1]" ||
+    hostname.endsWith(".localhost");
+
+  return isHttp && (protocol === "https:" || isLocalhost);
+}
+
 export function ServiceWorkerRegistration() {
   useEffect(() => {
-    if (!("serviceWorker" in navigator)) {
+    if (!canRegisterServiceWorker()) {
+      if (window.location.protocol === "file:") {
+        console.info(
+          "[pwa] Service workers are disabled for file:// URLs. Serve the out/ folder over http://localhost instead.",
+        );
+      }
       return;
     }
 
     const register = async () => {
       try {
-        const registration = await navigator.serviceWorker.register("/sw.js", {
+        await navigator.serviceWorker.register("/sw.js", {
           scope: "/",
           updateViaCache: "none",
-        });
-
-        registration.addEventListener("updatefound", () => {
-          const worker = registration.installing;
-          if (!worker) return;
-
-          worker.addEventListener("statechange", () => {
-            if (worker.state === "installed" && navigator.serviceWorker.controller) {
-              worker.postMessage({ type: "SKIP_WAITING" });
-            }
-          });
         });
       } catch (error) {
         console.error("Service worker registration failed:", error);
@@ -35,12 +49,6 @@ export function ServiceWorkerRegistration() {
     } else {
       window.addEventListener("load", register, { once: true });
     }
-
-    const handleControllerChange = () => window.location.reload();
-    navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange);
-    return () => {
-      navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange);
-    };
   }, []);
 
   return null;

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { BackgroundGlow } from "@/components/layout/BackgroundGlow";
+import { FileProtocolWarning } from "@/components/pwa/FileProtocolWarning";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
@@ -61,6 +62,7 @@ export default function RootLayout({
         <BackgroundGlow />
         <SiteHeader />
         <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
+          <FileProtocolWarning />
           <OfflineBanner />
           {children}
         </main>

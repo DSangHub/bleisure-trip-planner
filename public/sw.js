@@ -1,5 +1,5 @@
 /* eslint-disable no-restricted-globals */
-const VERSION = "bleisure-pwa-v1";
+const VERSION = "bleisure-pwa-v2";
 const STATIC_CACHE = `static-${VERSION}`;
 const RUNTIME_CACHE = `runtime-${VERSION}`;
 const TILE_CACHE = `tiles-${VERSION}`;
@@ -15,11 +15,23 @@ const PRECACHE_URLS = [
   "/icons/icon-512.png",
 ];
 
+async function precacheAssets(cache) {
+  await Promise.allSettled(
+    PRECACHE_URLS.map(async (url) => {
+      try {
+        await cache.add(url);
+      } catch (error) {
+        console.warn("[sw] precache skipped:", url, error);
+      }
+    }),
+  );
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(STATIC_CACHE)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .then((cache) => precacheAssets(cache))
       .then(() => self.skipWaiting()),
   );
 });
@@ -60,11 +72,19 @@ async function cacheFirst(request, cacheName) {
   if (cached) {
     return cached;
   }
-  const response = await fetch(request);
-  if (response.ok) {
-    cache.put(request, response.clone());
+
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    if (cached) {
+      return cached;
+    }
+    throw error;
   }
-  return response;
 }
 
 async function networkFirstWithOfflineFallback(request) {
@@ -82,7 +102,8 @@ async function networkFirstWithOfflineFallback(request) {
       return cached;
     }
 
-    const offlinePage = await caches.match("/offline/") || (await caches.match("/offline.html"));
+    const offlinePage =
+      (await caches.match("/offline/")) || (await caches.match("/offline.html"));
     if (offlinePage) {
       return offlinePage;
     }
@@ -120,6 +141,10 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
 
   if (request.method !== "GET") {
+    return;
+  }
+
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
     return;
   }
 

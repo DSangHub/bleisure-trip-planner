@@ -47,6 +47,54 @@ npm run serve:static
 
 Deploy the `out/` folder to any static host (Vercel, Netlify, GitHub Pages, S3, etc.).
 
+## Chromebook / localhost troubleshooting
+
+**Do not open `out/index.html` directly** (file://). Service workers, routing, and Next.js assets require an HTTP server.
+
+### Recommended (Chromebook Linux / Crostini)
+
+```bash
+cd /path/to/bleisure-trip-planner
+npm install
+npm run build
+npm run serve:static
+```
+
+Open in **Chrome**: http://localhost:3000/planner/
+
+### Alternative servers
+
+If one command fails on your Chromebook, try another:
+
+```bash
+# Default: Node static server (binds 0.0.0.0:3000, correct PWA MIME types)
+npm run serve:static
+
+# npm "serve" package
+npm run serve:static:serve
+
+# Python (no extra npm deps beyond build)
+npm run serve:static:python
+```
+
+### Still not loading?
+
+1. Confirm the build exists: `ls out/index.html`
+2. Use **http://localhost:3000** — not `file://`, not double-clicking HTML in Files
+3. Hard refresh: `Ctrl+Shift+R` (clear stale service worker)
+4. DevTools → Application → Service Workers → **Unregister**, then reload
+5. If port 3000 is busy: `PORT=4173 npm run serve:static` then open http://localhost:4173/planner/
+
+### Chrome OS browser outside Linux
+
+If the app runs in Crostini but you browse from Chrome OS, use the forwarded port URL shown in the Linux files app or run:
+
+```bash
+hostname -I
+```
+
+Then try `http://<linux-ip>:3000/planner/` on the same network.
+
 ## PWA (Progressive Web App)
 
 The app is a full **installable PWA** with offline support.
