@@ -16,6 +16,7 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""
   ></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -30,6 +31,7 @@
             violet: "#818cf8",
             biz: "#f59e0b",
             fun: "#34d399",
+            solar: "#fbbf24",
           },
           boxShadow: {
             glow: "0 18px 50px rgba(0, 0, 0, 0.35)",
@@ -65,8 +67,8 @@
         Bleisure Trip Planner
       </h1>
       <p class="mt-2 max-w-2xl text-sm leading-relaxed text-mist sm:text-base">
-        Balance meetings and downtime in one itinerary. Set your trip details, preview the destination on the map,
-        split business and leisure days, and build a plan you can revisit anytime.
+        Balance meetings and downtime in one itinerary. Compare solar-powered stays, estimate travel costs with
+        energy savings, preview your destination on the map, and export a PDF when you are ready.
       </p>
     </header>
 
@@ -165,6 +167,13 @@
               </button>
               <button
                 type="button"
+                id="export-pdf-btn"
+                class="w-full rounded-xl border border-solar/35 bg-solar/10 px-4 py-2.5 text-sm font-medium text-amber-200 transition hover:-translate-y-0.5 sm:w-auto"
+              >
+                Export PDF
+              </button>
+              <button
+                type="button"
                 id="reset-btn"
                 class="w-full rounded-xl border border-red-400/35 bg-red-400/10 px-4 py-2.5 text-sm font-medium text-red-300 transition hover:-translate-y-0.5 sm:w-auto"
               >
@@ -193,7 +202,16 @@
       </div>
 
       <section class="rounded-2xl border border-line bg-panel/95 p-4 shadow-glow backdrop-blur sm:p-5 lg:col-span-7 xl:col-span-7">
-        <h2 class="mb-4 text-lg font-semibold">Itinerary overview</h2>
+        <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 class="text-lg font-semibold">Itinerary overview</h2>
+          <button
+            type="button"
+            id="export-pdf-btn-alt"
+            class="w-full rounded-xl border border-solar/35 bg-solar/10 px-4 py-2 text-sm font-medium text-amber-200 transition hover:-translate-y-0.5 sm:w-auto"
+          >
+            Export PDF
+          </button>
+        </div>
 
         <div class="mb-4 grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
           <div class="rounded-xl border border-line bg-ink/55 p-3 sm:p-4">
@@ -217,10 +235,72 @@
         </div>
       </section>
     </div>
+
+    <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5 xl:mt-6">
+      <section class="rounded-2xl border border-line bg-panel/95 p-4 shadow-glow backdrop-blur sm:p-5">
+        <h2 class="mb-1 text-lg font-semibold">Travel cost estimator</h2>
+        <p class="mb-4 text-sm text-mist">Estimate trip spend and compare conventional lodging with solar-powered stays.</p>
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label for="flight-cost" class="mb-1.5 block text-sm text-mist">Round-trip flights ($)</label>
+            <input id="flight-cost" type="number" min="0" value="650" class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30">
+          </div>
+          <div>
+            <label for="nightly-rate" class="mb-1.5 block text-sm text-mist">Solar hotel nightly rate ($)</label>
+            <input id="nightly-rate" type="number" min="0" value="180" class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30">
+          </div>
+          <div>
+            <label for="business-daily" class="mb-1.5 block text-sm text-mist">Business day spend ($)</label>
+            <input id="business-daily" type="number" min="0" value="95" class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30">
+          </div>
+          <div>
+            <label for="leisure-daily" class="mb-1.5 block text-sm text-mist">Leisure day spend ($)</label>
+            <input id="leisure-daily" type="number" min="0" value="120" class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30">
+          </div>
+          <div class="sm:col-span-2">
+            <label for="transport-daily" class="mb-1.5 block text-sm text-mist">Local transport per day ($)</label>
+            <input id="transport-daily" type="number" min="0" value="35" class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30">
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
+          <div class="rounded-xl border border-line bg-ink/55 p-3">
+            <strong id="cost-conventional" class="block text-xl font-semibold text-slate-200">$0</strong>
+            <span class="text-xs text-mist">Conventional total</span>
+          </div>
+          <div class="rounded-xl border border-solar/30 bg-solar/10 p-3">
+            <strong id="cost-solar" class="block text-xl font-semibold text-amber-200">$0</strong>
+            <span class="text-xs text-mist">Solar stay total</span>
+          </div>
+          <div class="rounded-xl border border-fun/30 bg-emerald-400/10 p-3">
+            <strong id="cost-savings" class="block text-xl font-semibold text-emerald-300">$0</strong>
+            <span class="text-xs text-mist">Estimated savings</span>
+          </div>
+        </div>
+
+        <ul id="cost-breakdown" class="mt-4 space-y-2 text-sm text-slate-300"></ul>
+      </section>
+
+      <section class="rounded-2xl border border-line bg-panel/95 p-4 shadow-glow backdrop-blur sm:p-5">
+        <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold">Solar-powered hotel suggestions</h2>
+            <p class="text-sm text-mist">Eco-certified stays with on-site solar generation.</p>
+          </div>
+          <p id="hotel-status" class="text-xs text-mist sm:text-sm">Generate an itinerary to see hotel picks.</p>
+        </div>
+        <div id="hotel-list" class="space-y-3">
+          <div class="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-mist">
+            Hotel suggestions appear after you generate an itinerary.
+          </div>
+        </div>
+      </section>
+    </div>
   </div>
 
   <script>
-    const STORAGE_KEY = "bleisure-trip-planner-v2";
+    const STORAGE_KEY = "bleisure-trip-planner-v3";
     const DEFAULT_CENTER = [38.7223, -9.1393];
     const DEFAULT_ZOOM = 5;
 
@@ -257,6 +337,51 @@
       "Sunset viewpoint",
       "Neighborhood coffee crawl",
     ];
+
+    const SOLAR_HOTELS = {
+      london: [
+        { name: "SunGrid Tower Hotel", nightlyRate: 210, solarCoverage: 88, rating: 4.7, highlight: "Rooftop solar farm covers 88% of daily demand." },
+        { name: "Thames Solar Suites", nightlyRate: 185, solarCoverage: 76, rating: 4.5, highlight: "Battery-backed solar microgrid for guest floors." },
+        { name: "Greenwich Helios Inn", nightlyRate: 165, solarCoverage: 92, rating: 4.4, highlight: "Net-zero lobby powered entirely by solar canopy." },
+      ],
+      lisbon: [
+        { name: "Alfama Sol Stay", nightlyRate: 145, solarCoverage: 81, rating: 4.6, highlight: "Historic building retrofitted with solar roof tiles." },
+        { name: "Tagus Helios Hotel", nightlyRate: 175, solarCoverage: 90, rating: 4.7, highlight: "Harbor-view property with 90% solar energy mix." },
+        { name: "Baixa Sun Rooms", nightlyRate: 130, solarCoverage: 74, rating: 4.3, highlight: "Compact solar hotel ideal for bleisure trips." },
+      ],
+      paris: [
+        { name: "Seine Solar Maison", nightlyRate: 220, solarCoverage: 70, rating: 4.5, highlight: "Facade-integrated solar panels reduce grid draw." },
+        { name: "Montmartre Helios", nightlyRate: 195, solarCoverage: 83, rating: 4.6, highlight: "Hybrid solar-thermal system for hot water." },
+        { name: "Left Bank Sun Hotel", nightlyRate: 205, solarCoverage: 79, rating: 4.4, highlight: "Smart energy dashboard in every room." },
+      ],
+      default: [
+        { name: "Helios Urban Hotel", nightlyRate: 160, solarCoverage: 80, rating: 4.4, highlight: "Solar canopy over the rooftop lounge." },
+        { name: "SunStay City Collection", nightlyRate: 140, solarCoverage: 72, rating: 4.3, highlight: "Certified green stay with on-site solar array." },
+        { name: "EcoGrid Boutique Inn", nightlyRate: 155, solarCoverage: 85, rating: 4.5, highlight: "High solar coverage with low overnight rates." },
+      ],
+    };
+
+    const CONVENTIONAL_PREMIUM = 0.18;
+    const SOLAR_ENERGY_DISCOUNT = 0.12;
+    const CO2_KG_PER_NIGHT = 11.5;
+
+    const costFields = {
+      flight: document.getElementById("flight-cost"),
+      nightly: document.getElementById("nightly-rate"),
+      businessDaily: document.getElementById("business-daily"),
+      leisureDaily: document.getElementById("leisure-daily"),
+      transportDaily: document.getElementById("transport-daily"),
+    };
+
+    const costConventionalEl = document.getElementById("cost-conventional");
+    const costSolarEl = document.getElementById("cost-solar");
+    const costSavingsEl = document.getElementById("cost-savings");
+    const costBreakdownEl = document.getElementById("cost-breakdown");
+    const hotelListEl = document.getElementById("hotel-list");
+    const hotelStatusEl = document.getElementById("hotel-status");
+
+    let currentHotels = [];
+    let latestCostEstimate = null;
 
     let currentDays = [];
     let mapInstance = null;
@@ -369,6 +494,191 @@
       }
 
       return days;
+    }
+
+    function formatMoney(amount) {
+      return new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      }).format(amount);
+    }
+
+    function destinationKey(destination) {
+      const value = destination.toLowerCase();
+      if (value.includes("london")) return "london";
+      if (value.includes("lisbon")) return "lisbon";
+      if (value.includes("paris")) return "paris";
+      return "default";
+    }
+
+    function getSolarHotels(destination) {
+      return SOLAR_HOTELS[destinationKey(destination)] || SOLAR_HOTELS.default;
+    }
+
+    function averageHotelRate(hotels) {
+      if (!hotels.length) return 160;
+      return Math.round(hotels.reduce((sum, hotel) => sum + hotel.nightlyRate, 0) / hotels.length);
+    }
+
+    function renderHotels(destination) {
+      currentHotels = getSolarHotels(destination);
+      const avgRate = averageHotelRate(currentHotels);
+      costFields.nightly.value = String(avgRate);
+      hotelStatusEl.textContent = `${currentHotels.length} solar stays near ${destination}`;
+
+      hotelListEl.innerHTML = currentHotels.map((hotel) => `
+        <article class="rounded-xl border border-line bg-ink/45 p-3 sm:p-4">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 class="font-semibold">${escapeHtml(hotel.name)}</h3>
+              <p class="mt-1 text-sm text-mist">${escapeHtml(hotel.highlight)}</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span class="rounded-full bg-solar/15 px-2.5 py-1 text-xs font-semibold text-amber-200">${hotel.solarCoverage}% solar</span>
+              <span class="rounded-full bg-sky/15 px-2.5 py-1 text-xs font-semibold text-sky">${formatMoney(hotel.nightlyRate)}/night</span>
+            </div>
+          </div>
+          <p class="mt-2 text-xs text-mist">Guest rating ${hotel.rating.toFixed(1)} / 5</p>
+        </article>
+      `).join("");
+    }
+
+    function estimateCosts(data, total) {
+      const nights = Math.max(total - 1, 1);
+      const openDays = Math.max(total - data.businessDays - data.leisureDays, 0);
+      const flight = Number(costFields.flight.value || 0);
+      const nightly = Number(costFields.nightly.value || 0);
+      const businessDaily = Number(costFields.businessDaily.value || 0);
+      const leisureDaily = Number(costFields.leisureDaily.value || 0);
+      const transportDaily = Number(costFields.transportDaily.value || 0);
+
+      const conventionalNightly = nightly * (1 + CONVENTIONAL_PREMIUM);
+      const lodgingConventional = conventionalNightly * nights;
+      const lodgingSolar = nightly * nights;
+      const meals = (data.businessDays * businessDaily) + (data.leisureDays * leisureDaily) + (openDays * ((businessDaily + leisureDaily) / 2));
+      const transport = transportDaily * total;
+      const avgSolarCoverage = currentHotels.length
+        ? currentHotels.reduce((sum, hotel) => sum + hotel.solarCoverage, 0) / currentHotels.length
+        : 80;
+      const energyCredit = lodgingSolar * SOLAR_ENERGY_DISCOUNT * (avgSolarCoverage / 100);
+      const carbonAvoidedKg = Math.round(nights * CO2_KG_PER_NIGHT * (avgSolarCoverage / 100));
+
+      const conventionalTotal = flight + lodgingConventional + meals + transport;
+      const solarTotal = Math.max(flight + lodgingSolar + meals + transport - energyCredit, 0);
+      const savings = Math.max(conventionalTotal - solarTotal, 0);
+
+      latestCostEstimate = {
+        nights,
+        flight,
+        lodgingConventional,
+        lodgingSolar,
+        meals,
+        transport,
+        energyCredit,
+        carbonAvoidedKg,
+        conventionalTotal,
+        solarTotal,
+        savings,
+        avgSolarCoverage,
+      };
+
+      costConventionalEl.textContent = formatMoney(conventionalTotal);
+      costSolarEl.textContent = formatMoney(solarTotal);
+      costSavingsEl.textContent = formatMoney(savings);
+
+      costBreakdownEl.innerHTML = [
+        `<li>Lodging: ${formatMoney(lodgingConventional)} conventional vs ${formatMoney(lodgingSolar)} solar</li>`,
+        `<li>Meals &amp; activities: ${formatMoney(meals)} across ${total} day(s)</li>`,
+        `<li>Flights + local transport: ${formatMoney(flight + transport)}</li>`,
+        `<li>Solar energy credit: -${formatMoney(energyCredit)} (${Math.round(avgSolarCoverage)}% avg solar coverage)</li>`,
+        `<li>Estimated carbon avoided: ${carbonAvoidedKg} kg CO₂ by choosing solar stays</li>`,
+      ].join("");
+    }
+
+    function updateCostEstimator(data, total) {
+      if (!currentHotels.length) {
+        renderHotels(data.destination);
+      }
+      estimateCosts(data, total);
+    }
+
+    function getCostInputs() {
+      return {
+        flight: Number(costFields.flight.value || 0),
+        nightly: Number(costFields.nightly.value || 0),
+        businessDaily: Number(costFields.businessDaily.value || 0),
+        leisureDaily: Number(costFields.leisureDaily.value || 0),
+        transportDaily: Number(costFields.transportDaily.value || 0),
+      };
+    }
+
+    function exportItineraryPdf() {
+      if (!currentDays.length) {
+        tipsEl.textContent = "Generate an itinerary before exporting to PDF.";
+        return;
+      }
+
+      const data = getFormData();
+      const { total } = validateTrip(data);
+      updateCostEstimator(data, total);
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: "pt", format: "letter" });
+      const margin = 48;
+      const lineHeight = 16;
+      let y = margin;
+
+      function addLine(text, options = {}) {
+        if (y > 720) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.setFont("helvetica", options.bold ? "bold" : "normal");
+        doc.setFontSize(options.size || 11);
+        doc.text(text, margin, y);
+        y += options.spacing || lineHeight;
+      }
+
+      addLine("Bleisure Trip Planner", { bold: true, size: 18, spacing: 24 });
+      addLine(`Traveler: ${data.traveler || "Guest"}`, { bold: true });
+      addLine(`Destination: ${data.destination}`);
+      addLine(`Dates: ${data.startDate} to ${data.endDate}`);
+      addLine(`Trip length: ${total} days (${data.businessDays} business, ${data.leisureDays} leisure)`);
+      if (data.notes) {
+        addLine(`Notes: ${data.notes}`);
+      }
+
+      y += 8;
+      addLine("Itinerary", { bold: true, size: 13, spacing: 20 });
+      currentDays.forEach((day) => {
+        addLine(`${day.label} (${day.type})`, { bold: true });
+        day.activities.forEach((activity) => {
+          addLine(`- ${activity || "Open time"}`);
+        });
+        y += 4;
+      });
+
+      y += 8;
+      addLine("Solar hotel suggestions", { bold: true, size: 13, spacing: 20 });
+      currentHotels.forEach((hotel) => {
+        addLine(`${hotel.name} - ${formatMoney(hotel.nightlyRate)}/night, ${hotel.solarCoverage}% solar`, { bold: true });
+        addLine(hotel.highlight);
+        y += 4;
+      });
+
+      if (latestCostEstimate) {
+        y += 8;
+        addLine("Travel cost estimate", { bold: true, size: 13, spacing: 20 });
+        addLine(`Conventional total: ${formatMoney(latestCostEstimate.conventionalTotal)}`);
+        addLine(`Solar stay total: ${formatMoney(latestCostEstimate.solarTotal)}`);
+        addLine(`Estimated savings: ${formatMoney(latestCostEstimate.savings)}`);
+        addLine(`Carbon avoided: ${latestCostEstimate.carbonAvoidedKg} kg CO2`);
+      }
+
+      const safeDestination = data.destination.replace(/[^\w.-]+/g, "_");
+      doc.save(`bleisure-trip-${safeDestination}.pdf`);
+      tipsEl.textContent = "Itinerary exported as PDF.";
     }
 
     function badgeClasses(type) {
@@ -564,6 +874,8 @@
       renderDays(currentDays);
       updateSummary(total, data.businessDays, data.leisureDays);
       updateTips(total, data.businessDays, data.leisureDays);
+      renderHotels(data.destination);
+      updateCostEstimator(data, total);
 
       const location = await geocodeDestination(data.destination);
       if (!location) {
@@ -580,6 +892,7 @@
       const payload = {
         ...data,
         days: currentDays,
+        costs: getCostInputs(),
         savedAt: new Date().toISOString(),
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -604,10 +917,20 @@
         currentDays = saved.days || [];
         renderDays(currentDays);
 
+        if (saved.costs) {
+          costFields.flight.value = saved.costs.flight ?? costFields.flight.value;
+          costFields.nightly.value = saved.costs.nightly ?? costFields.nightly.value;
+          costFields.businessDaily.value = saved.costs.businessDaily ?? costFields.businessDaily.value;
+          costFields.leisureDaily.value = saved.costs.leisureDaily ?? costFields.leisureDaily.value;
+          costFields.transportDaily.value = saved.costs.transportDaily ?? costFields.transportDaily.value;
+        }
+
         if (saved.startDate && saved.endDate) {
           const { total } = validateTrip(getFormData());
           updateSummary(total, Number(saved.businessDays || 0), Number(saved.leisureDays || 0));
           updateTips(total, Number(saved.businessDays || 0), Number(saved.leisureDays || 0));
+          renderHotels(saved.destination || fields.destination.value);
+          updateCostEstimator(getFormData(), total);
         }
 
         if (saved.destination) {
@@ -621,11 +944,24 @@
     function resetPlan() {
       form.reset();
       currentDays = [];
+      currentHotels = [];
+      latestCostEstimate = null;
       renderDays(currentDays);
       updateSummary(0, 0, 0);
       localStorage.removeItem(STORAGE_KEY);
       tipsEl.textContent = "Planner reset. Start a fresh bleisure itinerary.";
       lastGeocodedDestination = "";
+
+      hotelListEl.innerHTML = `
+        <div class="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-mist">
+          Hotel suggestions appear after you generate an itinerary.
+        </div>
+      `;
+      hotelStatusEl.textContent = "Generate an itinerary to see hotel picks.";
+      costConventionalEl.textContent = formatMoney(0);
+      costSolarEl.textContent = formatMoney(0);
+      costSavingsEl.textContent = formatMoney(0);
+      costBreakdownEl.innerHTML = "";
 
       clearDestinationMarker();
       mapInstance.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
@@ -693,7 +1029,24 @@
     });
 
     document.getElementById("reset-btn").addEventListener("click", resetPlan);
+    document.getElementById("export-pdf-btn").addEventListener("click", exportItineraryPdf);
+    document.getElementById("export-pdf-btn-alt").addEventListener("click", exportItineraryPdf);
     fields.destination.addEventListener("input", scheduleGeocode);
+
+    Object.values(costFields).forEach((field) => {
+      field.addEventListener("input", () => {
+        if (!currentDays.length) {
+          return;
+        }
+        try {
+          const data = getFormData();
+          const { total } = validateTrip(data);
+          estimateCosts(data, total);
+        } catch {
+          // Ignore partial input while the user is editing cost fields.
+        }
+      });
+    });
 
     window.addEventListener("resize", () => {
       mapInstance.invalidateSize();
