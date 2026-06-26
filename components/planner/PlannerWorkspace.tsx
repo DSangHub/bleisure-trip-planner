@@ -6,7 +6,7 @@ import { ItineraryOverview } from "@/components/planner/ItineraryOverview";
 import { CostEstimator } from "@/components/planner/CostEstimator";
 import { SolarHotels } from "@/components/planner/SolarHotels";
 import { PlannerHydration } from "@/components/planner/PlannerHydration";
-import { StoreHydrationGate } from "@/components/planner/StoreHydrationGate";
+import { StoreHydrationGate } from "@/components/StoreHydrationGate";
 import { Card } from "@/components/ui/Card";
 
 const DestinationMap = dynamic(

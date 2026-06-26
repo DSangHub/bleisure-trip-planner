@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { StoreHydrationGate, savedPageFallback } from "@/components/StoreHydrationGate";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { formatMoney } from "@/lib/format";
 import { useTripStore } from "@/store/trip-store";
 
-export function SavedTripsClient() {
+function SavedTripsContent() {
   const router = useRouter();
   const savedTrips = useTripStore((state) => state.savedTrips);
   const loadSavedTrip = useTripStore((state) => state.loadSavedTrip);
@@ -19,12 +20,16 @@ export function SavedTripsClient() {
       <header>
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Saved trips</h1>
         <p className="mt-2 max-w-2xl text-sm text-mist sm:text-base">
-          Reopen a saved bleisure plan or remove trips you no longer need.
+          Reopen a saved bleisure plan or remove trips you no longer need. Plans are stored in this
+          browser and persist across sessions.
         </p>
       </header>
 
       {statusMessage ? (
-        <div className="rounded-xl border border-line bg-panel2/70 px-3 py-2 text-sm text-mist">
+        <div
+          role="status"
+          className="rounded-xl border border-line bg-panel2/70 px-3 py-2 text-sm text-mist"
+        >
           {statusMessage}
         </div>
       ) : null}
@@ -79,5 +84,13 @@ export function SavedTripsClient() {
         </div>
       )}
     </div>
+  );
+}
+
+export function SavedTripsClient() {
+  return (
+    <StoreHydrationGate fallback={savedPageFallback}>
+      <SavedTripsContent />
+    </StoreHydrationGate>
   );
 }

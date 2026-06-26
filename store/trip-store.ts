@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { useToastStore } from "@/store/toast-store";
 import { DEFAULT_COST_INPUTS } from "@/lib/constants";
 import { estimateCosts } from "@/lib/costs";
 import { createTripId, defaultTripDates } from "@/lib/format";
@@ -43,7 +44,7 @@ interface TripState {
   addActivity: (dayIndex: number) => void;
   removeActivity: (dayIndex: number, activityIndex: number) => void;
   generateItinerary: () => Promise<void>;
-  saveCurrentTrip: () => void;
+  saveCurrentTrip: () => boolean;
   loadSavedTrip: (id: string) => void;
   deleteSavedTrip: (id: string) => void;
   resetPlanner: () => void;
@@ -171,6 +172,9 @@ export const useTripStore = create<TripState>()(
             tip,
             statusMessage: `Itinerary generated for ${trip.destination}.`,
           });
+          useToastStore
+            .getState()
+            .showToast(`Itinerary ready for ${trip.destination}.`, "success");
 
           set({ mapStatus: `Locating ${trip.destination}...` });
           const geocode = await geocodeDestinationClient(trip.destination);
@@ -190,6 +194,7 @@ export const useTripStore = create<TripState>()(
           set({
             statusMessage: message,
           });
+          useToastStore.getState().showToast(message, "error");
         } finally {
           set({ isGenerating: false });
         }
@@ -197,9 +202,13 @@ export const useTripStore = create<TripState>()(
 
       saveCurrentTrip: () => {
         const state = get();
+        const showToast = useToastStore.getState().showToast;
+
         if (!state.days.length) {
-          set({ statusMessage: "Generate an itinerary before saving." });
-          return;
+          const message = "Generate an itinerary before saving.";
+          set({ statusMessage: message });
+          showToast(message, "error");
+          return false;
         }
 
         try {
@@ -209,22 +218,26 @@ export const useTripStore = create<TripState>()(
             id: createTripId(),
             name: `${trip.destination} (${trip.startDate})`,
             savedAt: new Date().toISOString(),
-            trip,
-            days: state.days,
-            costs: state.costs,
-            hotels: state.hotels,
-            costEstimate: state.costEstimate,
+            trip: structuredClone(trip),
+            days: structuredClone(state.days),
+            costs: structuredClone(state.costs),
+            hotels: structuredClone(state.hotels),
+            costEstimate: state.costEstimate ? structuredClone(state.costEstimate) : null,
           };
 
+          const message = `Saved ${trip.destination} to your collection.`;
           set({
             trip,
             savedTrips: [savedTrip, ...state.savedTrips],
-            statusMessage: "Trip saved to your collection.",
+            statusMessage: message,
           });
+          showToast(message, "success");
+          return true;
         } catch (error) {
-          set({
-            statusMessage: error instanceof Error ? error.message : "Could not save trip.",
-          });
+          const message = error instanceof Error ? error.message : "Could not save trip.";
+          set({ statusMessage: message });
+          showToast(message, "error");
+          return false;
         }
       },
 
@@ -239,6 +252,7 @@ export const useTripStore = create<TripState>()(
           saved.hotels,
         );
 
+        const message = `Loaded ${saved.name}.`;
         set({
           trip: saved.trip,
           days: saved.days,
@@ -246,16 +260,22 @@ export const useTripStore = create<TripState>()(
           hotels: saved.hotels,
           costEstimate: saved.costEstimate ?? costEstimate,
           tip,
-          statusMessage: `Loaded ${saved.name}.`,
+          statusMessage: message,
           mapStatus: `Showing ${saved.trip.destination} on the map.`,
         });
+        useToastStore.getState().showToast(message, "success");
       },
 
-      deleteSavedTrip: (id) =>
+      deleteSavedTrip: (id) => {
+        const removed = get().savedTrips.find((trip) => trip.id === id);
         set((state) => ({
           savedTrips: state.savedTrips.filter((trip) => trip.id !== id),
           statusMessage: "Saved trip removed.",
-        })),
+        }));
+        useToastStore
+          .getState()
+          .showToast(removed ? `Removed ${removed.name}.` : "Saved trip removed.", "info");
+      },
 
       resetPlanner: () => {
         const dates = defaultTripDates();
@@ -274,7 +294,26 @@ export const useTripStore = create<TripState>()(
     }),
     {
       name: "bleisure-trip-planner-next",
-      version: 1,
+      version: 2,
+      storage: createJSONStorage(() =>
+        typeof window !== "undefined"
+          ? localStorage
+          : {
+              getItem: () => null,
+              setItem: () => {},
+              removeItem: () => {},
+            },
+      ),
+      migrate: (persistedState, version) => {
+        const state = persistedState as Partial<TripState>;
+        if (version < 2) {
+          return {
+            ...state,
+            savedTrips: Array.isArray(state.savedTrips) ? state.savedTrips : [],
+          };
+        }
+        return state;
+      },
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<TripState> | undefined;
         if (!persisted) {
@@ -288,8 +327,14 @@ export const useTripStore = create<TripState>()(
 
         return {
           ...currentState,
-          ...persisted,
           trip,
+          days: persisted.days ?? currentState.days,
+          hotels: persisted.hotels ?? currentState.hotels,
+          costs: persisted.costs ?? currentState.costs,
+          costEstimate: persisted.costEstimate ?? currentState.costEstimate,
+          savedTrips: Array.isArray(persisted.savedTrips)
+            ? persisted.savedTrips
+            : currentState.savedTrips,
         };
       },
       partialize: (state) => ({

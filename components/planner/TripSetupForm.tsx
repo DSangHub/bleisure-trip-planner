@@ -4,6 +4,7 @@ import { Button, inputClassName } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { exportItineraryPdf } from "@/lib/pdf";
 import { normalizeTripForm, validateTrip } from "@/lib/trip";
+import { useToastStore } from "@/store/toast-store";
 import { useTripStore } from "@/store/trip-store";
 
 export function TripSetupForm() {
@@ -18,10 +19,17 @@ export function TripSetupForm() {
   const generateItinerary = useTripStore((state) => state.generateItinerary);
   const saveCurrentTrip = useTripStore((state) => state.saveCurrentTrip);
   const resetPlanner = useTripStore((state) => state.resetPlanner);
+  const showToast = useToastStore((state) => state.showToast);
+
+  const handleSave = () => {
+    saveCurrentTrip();
+  };
 
   const handleExport = () => {
     if (!days.length) {
-      useTripStore.getState().setStatusMessage("Generate an itinerary before exporting to PDF.");
+      const message = "Generate an itinerary before exporting to PDF.";
+      useTripStore.getState().setStatusMessage(message);
+      showToast(message, "error");
       return;
     }
 
@@ -29,11 +37,13 @@ export function TripSetupForm() {
       const normalizedTrip = normalizeTripForm(trip);
       const { total } = validateTrip(normalizedTrip);
       exportItineraryPdf({ trip: normalizedTrip, total, days, hotels, costEstimate });
-      useTripStore.getState().setStatusMessage("Itinerary exported as PDF.");
+      const message = "Itinerary exported as PDF.";
+      useTripStore.getState().setStatusMessage(message);
+      showToast(message, "success");
     } catch (error) {
-      useTripStore.getState().setStatusMessage(
-        error instanceof Error ? error.message : "Could not export PDF.",
-      );
+      const message = error instanceof Error ? error.message : "Could not export PDF.";
+      useTripStore.getState().setStatusMessage(message);
+      showToast(message, "error");
     }
   };
 
@@ -149,7 +159,7 @@ export function TripSetupForm() {
           <Button type="submit" variant="primary" disabled={isGenerating} className="sm:min-w-[10rem]">
             {isGenerating ? "Generating..." : "Generate itinerary"}
           </Button>
-          <Button type="button" onClick={saveCurrentTrip}>
+          <Button type="button" onClick={handleSave}>
             Save plan
           </Button>
           <Button type="button" variant="solar" onClick={handleExport}>

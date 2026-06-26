@@ -5,6 +5,7 @@ import { FileProtocolWarning } from "@/components/pwa/FileProtocolWarning";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
+import { ToastHost } from "@/components/ui/ToastHost";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -67,6 +68,7 @@ export default function RootLayout({
           {children}
         </main>
         <InstallPrompt />
+        <ToastHost />
       </body>
     </html>
   );
