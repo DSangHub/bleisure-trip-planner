@@ -4,8 +4,9 @@ import {
   detectActivityCategory,
   getActivityCategoryLabel,
   getActivityVendors,
+  getHikingVendorGroups,
 } from "@/lib/activity-vendors";
-import type { ActivityVendor } from "@/lib/types";
+import type { ActivityVendor, HikingVendorKind } from "@/lib/types";
 
 export function ActivityVendorSuggestions({
   destination,
@@ -20,9 +21,10 @@ export function ActivityVendorSuggestions({
   }
 
   const category = detectActivityCategory(trimmed);
-  const vendors = getActivityVendors(destination, trimmed);
+  const hikingGroups = getHikingVendorGroups(destination, trimmed);
+  const vendors = hikingGroups ? [] : getActivityVendors(destination, trimmed);
 
-  if (!vendors.length) {
+  if (!hikingGroups && !vendors.length) {
     return null;
   }
 
@@ -37,7 +39,33 @@ export function ActivityVendorSuggestions({
         </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
+      {hikingGroups ? (
+        <div className="space-y-3">
+          {hikingGroups.guidedTours.length ? (
+            <VendorSection title="Guided tours" vendors={hikingGroups.guidedTours} />
+          ) : null}
+          {hikingGroups.gearRentals.length ? (
+            <VendorSection title="Gear rentals" vendors={hikingGroups.gearRentals} />
+          ) : null}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
+          {vendors.map((vendor) => (
+            <VendorCard key={vendor.id} vendor={vendor} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VendorSection({ title, vendors }: { title: string; vendors: ActivityVendor[] }) {
+  return (
+    <div>
+      <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-300">
+        {title}
+      </h4>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {vendors.map((vendor) => (
           <VendorCard key={vendor.id} vendor={vendor} />
         ))}
@@ -46,11 +74,26 @@ export function ActivityVendorSuggestions({
   );
 }
 
+function kindLabel(kind?: HikingVendorKind): string | null {
+  if (kind === "guided-tour") return "Guided tour";
+  if (kind === "gear-rental") return "Gear rental";
+  return null;
+}
+
 function VendorCard({ vendor }: { vendor: ActivityVendor }) {
+  const subtype = kindLabel(vendor.kind);
+
   return (
     <article className="flex h-full flex-col rounded-lg border border-line bg-ink/50 p-3">
       <div className="mb-1 flex items-start justify-between gap-2">
-        <h4 className="text-sm font-semibold leading-snug text-slate-100">{vendor.name}</h4>
+        <div className="min-w-0">
+          <h4 className="text-sm font-semibold leading-snug text-slate-100">{vendor.name}</h4>
+          {subtype ? (
+            <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wide text-mist">
+              {subtype}
+            </p>
+          ) : null}
+        </div>
         {vendor.ecoFriendly ? (
           <span
             className="shrink-0 rounded-full border border-solar/35 bg-solar/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-200"

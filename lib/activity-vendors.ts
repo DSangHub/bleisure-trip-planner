@@ -1,5 +1,5 @@
 import { destinationKey } from "./format";
-import type { ActivityCategory, ActivityVendor } from "./types";
+import type { ActivityCategory, ActivityVendor, HikingVendorGroups } from "./types";
 
 type VendorCatalog = Partial<Record<ActivityCategory, ActivityVendor[]>>;
 
@@ -38,6 +38,7 @@ const DENVER_VENDORS: VendorCatalog = {
       priceEstimate: "$145 / full day",
       bookUrl: "#book-rocky-solar-guides",
       ecoFriendly: true,
+      kind: "guided-tour",
     },
     {
       id: "denver-front-range-hikes",
@@ -46,14 +47,43 @@ const DENVER_VENDORS: VendorCatalog = {
       priceEstimate: "$89 / half day",
       bookUrl: "#book-front-range-hikes",
       ecoFriendly: true,
+      kind: "guided-tour",
     },
     {
-      id: "denver-summit-outfitters",
-      name: "Summit Day Hike Co.",
-      description: "All-level Rockies day hikes with gear rental and picnic lunch option.",
-      priceEstimate: "$120 / full day",
-      bookUrl: "#book-summit-day-hike",
+      id: "denver-continental-divide",
+      name: "Continental Divide Guided Treks",
+      description: "Full-day Rockies treks with flexible pace groups and trail lunch included.",
+      priceEstimate: "$165 / full day",
+      bookUrl: "#book-continental-divide-treks",
       ecoFriendly: false,
+      kind: "guided-tour",
+    },
+    {
+      id: "denver-helios-trail-gear",
+      name: "Helios Trail Gear Co.",
+      description: "Solar-powered rental hub for poles, packs, layers, and GPS — hotel delivery available.",
+      priceEstimate: "$42 / day kit",
+      bookUrl: "#book-helios-trail-gear",
+      ecoFriendly: true,
+      kind: "gear-rental",
+    },
+    {
+      id: "denver-alpine-eco-outfitters",
+      name: "Alpine Eco Outfitters",
+      description: "Refurbished and low-impact hiking gear with reusable bottle and snack kit add-on.",
+      priceEstimate: "$35 / day kit",
+      bookUrl: "#book-alpine-eco-outfitters",
+      ecoFriendly: true,
+      kind: "gear-rental",
+    },
+    {
+      id: "denver-rockies-rack-pack",
+      name: "Rockies Rack & Pack",
+      description: "Boots, backpacks, and bear canisters for self-guided Front Range day hikes.",
+      priceEstimate: "$48 / day kit",
+      bookUrl: "#book-rockies-rack-pack",
+      ecoFriendly: false,
+      kind: "gear-rental",
     },
   ],
   walking: [
@@ -193,6 +223,7 @@ const LISBON_VENDORS: VendorCatalog = {
       priceEstimate: "€95 / full day",
       bookUrl: "#book-sintra-eco-trails",
       ecoFriendly: true,
+      kind: "guided-tour",
     },
     {
       id: "lisbon-monsanto-walks",
@@ -201,6 +232,7 @@ const LISBON_VENDORS: VendorCatalog = {
       priceEstimate: "€45 / half day",
       bookUrl: "#book-monsanto-hikes",
       ecoFriendly: true,
+      kind: "guided-tour",
     },
     {
       id: "lisbon-arrabida-trails",
@@ -209,6 +241,25 @@ const LISBON_VENDORS: VendorCatalog = {
       priceEstimate: "€110 / full day",
       bookUrl: "#book-arrabida-trails",
       ecoFriendly: false,
+      kind: "guided-tour",
+    },
+    {
+      id: "lisbon-trail-kit-rentals",
+      name: "Tagus Trail Kit Rentals",
+      description: "Day-hike packs, poles, and layers with reusable water flask included.",
+      priceEstimate: "€30 / day kit",
+      bookUrl: "#book-tagus-trail-kit",
+      ecoFriendly: true,
+      kind: "gear-rental",
+    },
+    {
+      id: "lisbon-sintra-gear",
+      name: "Sintra Green Gear Co.",
+      description: "Eco-refurbished boots and backpacks for Sintra hill trails.",
+      priceEstimate: "€28 / day kit",
+      bookUrl: "#book-sintra-green-gear",
+      ecoFriendly: true,
+      kind: "gear-rental",
     },
   ],
   walking: [
@@ -336,10 +387,11 @@ const DEFAULT_VENDORS: VendorCatalog = {
     {
       id: "default-eco-hikes",
       name: "Trailhead Eco Guides",
-      description: "Carbon-conscious guided hikes with small groups and gear rental.",
+      description: "Carbon-conscious guided hikes with small groups and naturalist commentary.",
       priceEstimate: "$95 / full day",
       bookUrl: "#book-trailhead-eco",
       ecoFriendly: true,
+      kind: "guided-tour",
     },
     {
       id: "default-nature-walks",
@@ -348,6 +400,25 @@ const DEFAULT_VENDORS: VendorCatalog = {
       priceEstimate: "$75 / half day",
       bookUrl: "#book-nature-path",
       ecoFriendly: false,
+      kind: "guided-tour",
+    },
+    {
+      id: "default-trail-gear",
+      name: "Summit Kit Rentals",
+      description: "Hiking poles, day packs, and weather layers with hotel drop-off.",
+      priceEstimate: "$38 / day kit",
+      bookUrl: "#book-summit-kit-rentals",
+      ecoFriendly: true,
+      kind: "gear-rental",
+    },
+    {
+      id: "default-eco-gear",
+      name: "Green Trail Outfitters",
+      description: "Reused and repaired gear program with low-waste packaging.",
+      priceEstimate: "$32 / day kit",
+      bookUrl: "#book-green-trail-outfitters",
+      ecoFriendly: true,
+      kind: "gear-rental",
     },
   ],
   walking: [
@@ -446,7 +517,7 @@ const VENDOR_CATALOG: Record<string, VendorCatalog> = {
 
 const CATEGORY_KEYWORDS: Record<ActivityCategory, string[]> = {
   biking: ["bike", "biking", "bicycle", "cycling", "cycle", "e-bike", "ebike"],
-  hiking: ["hike", "hiking", "trail", "mountain", "summit", "trek", "rockies"],
+  hiking: ["hike", "hiking", "trail", "mountain", "summit", "trek", "rockies", "gear", "rental", "outfitter", "pack", "boots"],
   walking: ["walk", "walking", "tour", "stroll"],
   food: ["food", "market", "restaurant", "dinner", "lunch", "tasting", "crawl"],
   museum: ["museum", "gallery", "exhibit", "art"],
@@ -485,12 +556,16 @@ function sortEcoFirst(vendors: ActivityVendor[]): ActivityVendor[] {
   return [...vendors].sort((a, b) => Number(b.ecoFriendly) - Number(a.ecoFriendly));
 }
 
-export function getActivityVendors(
+function dedupeVendors(vendors: ActivityVendor[]): ActivityVendor[] {
+  return vendors.filter(
+    (vendor, index, list) => list.findIndex((item) => item.id === vendor.id) === index,
+  );
+}
+
+function getAllCategoryVendors(
   destination: string,
-  activity: string,
-  limit = 3,
+  category: ActivityCategory,
 ): ActivityVendor[] {
-  const category = detectActivityCategory(activity);
   const key = destinationKey(destination);
   const catalog = VENDOR_CATALOG[key] ?? VENDOR_CATALOG.default;
   const defaultCatalog = VENDOR_CATALOG.default;
@@ -498,11 +573,50 @@ export function getActivityVendors(
   const specific = catalog[category] ?? [];
   const fallback = defaultCatalog[category] ?? defaultCatalog.default ?? [];
 
-  const merged = sortEcoFirst(
-    [...specific, ...fallback].filter(
-      (vendor, index, list) => list.findIndex((item) => item.id === vendor.id) === index,
-    ),
-  );
+  return sortEcoFirst(dedupeVendors([...specific, ...fallback]));
+}
+
+function isGuidedTour(vendor: ActivityVendor): boolean {
+  return vendor.kind === "guided-tour" || vendor.kind === "general" || !vendor.kind;
+}
+
+function isGearRental(vendor: ActivityVendor): boolean {
+  return vendor.kind === "gear-rental";
+}
+
+export function getHikingVendorGroups(
+  destination: string,
+  activity: string,
+): HikingVendorGroups | null {
+  if (detectActivityCategory(activity) !== "hiking") {
+    return null;
+  }
+
+  const vendors = getAllCategoryVendors(destination, "hiking");
+  const guidedTours = sortEcoFirst(vendors.filter(isGuidedTour)).slice(0, 2);
+  const gearRentals = sortEcoFirst(vendors.filter(isGearRental)).slice(0, 2);
+
+  if (!guidedTours.length && !gearRentals.length) {
+    return null;
+  }
+
+  return { guidedTours, gearRentals };
+}
+
+export function getActivityVendors(
+  destination: string,
+  activity: string,
+  limit = 3,
+): ActivityVendor[] {
+  const category = detectActivityCategory(activity);
+  const merged = getAllCategoryVendors(destination, category);
+
+  if (category === "hiking") {
+    const groups = getHikingVendorGroups(destination, activity);
+    if (groups) {
+      return [...groups.guidedTours, ...groups.gearRentals].slice(0, limit);
+    }
+  }
 
   return merged.slice(0, limit);
 }
@@ -510,7 +624,7 @@ export function getActivityVendors(
 export function getActivityCategoryLabel(category: ActivityCategory): string {
   const labels: Record<ActivityCategory, string> = {
     biking: "Biking & rentals",
-    hiking: "Hiking & trails",
+    hiking: "Hiking · guided tours & gear",
     walking: "Walking tours",
     food: "Food & markets",
     museum: "Museums & culture",

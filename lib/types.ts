@@ -66,6 +66,8 @@ export type ActivityCategory =
   | "explore"
   | "default";
 
+export type HikingVendorKind = "guided-tour" | "gear-rental" | "general";
+
 export interface ActivityVendor {
   id: string;
   name: string;
@@ -73,6 +75,12 @@ export interface ActivityVendor {
   priceEstimate: string;
   bookUrl: string;
   ecoFriendly: boolean;
+  kind?: HikingVendorKind;
+}
+
+export interface HikingVendorGroups {
+  guidedTours: ActivityVendor[];
+  gearRentals: ActivityVendor[];
 }
 
 export interface SavedTrip {
