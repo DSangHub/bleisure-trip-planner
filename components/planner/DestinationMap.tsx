@@ -5,6 +5,7 @@ import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { DEFAULT_CENTER, DEFAULT_ZOOM } from "@/lib/constants";
+import { geocodeDestinationClient } from "@/lib/geocode-client";
 import { useTripStore } from "@/store/trip-store";
 
 const markerIcon = L.icon({
@@ -67,14 +68,15 @@ export function DestinationMap() {
     debounceRef.current = setTimeout(async () => {
       useTripStore.getState().setMapStatus(`Locating ${destination}...`);
       try {
-        const response = await fetch(`/api/geocode?q=${encodeURIComponent(destination)}`);
-        const payload = await response.json();
-        if (!response.ok) {
+        const geocode = await geocodeDestinationClient(destination);
+        if (!geocode) {
           useTripStore.getState().setGeocode(null);
-          useTripStore.getState().setMapStatus(payload.error ?? "Map lookup failed.");
+          useTripStore.getState().setMapStatus(
+            `No map match found for "${destination}". Try a city and country.`,
+          );
           return;
         }
-        useTripStore.getState().setGeocode(payload);
+        useTripStore.getState().setGeocode(geocode);
         useTripStore.getState().setMapStatus(`Showing ${destination} on the map.`);
         lastQuery.current = destination;
       } catch {

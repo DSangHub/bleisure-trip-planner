@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import { DEFAULT_COST_INPUTS } from "@/lib/constants";
 import { estimateCosts } from "@/lib/costs";
 import { createTripId, defaultTripDates } from "@/lib/format";
+import { geocodeDestinationClient } from "@/lib/geocode-client";
 import {
   averageHotelRate,
   buildDayPlan,
@@ -168,17 +169,11 @@ export const useTripStore = create<TripState>()(
             mapStatus: `Locating ${state.trip.destination}...`,
           });
 
-          const response = await fetch(
-            `/api/geocode?q=${encodeURIComponent(state.trip.destination)}`,
-          );
-          if (!response.ok) {
-            throw new Error("Map lookup failed. Check your connection and try again.");
-          }
-          const geocode = (await response.json()) as GeocodeResult | { error: string };
-          if ("error" in geocode) {
+          const geocode = await geocodeDestinationClient(state.trip.destination);
+          if (!geocode) {
             set({
               geocode: null,
-              mapStatus: geocode.error,
+              mapStatus: `No map match found for "${state.trip.destination}". Try a city and country.`,
             });
           } else {
             set({

@@ -53,24 +53,25 @@ lib/                    # Trip logic, costs, PDF, geocode
 store/trip-store.ts     # Zustand store with persistence
 ```
 
-## Deploy to Vercel
+## Production build (static export)
 
-1. Push this repository to GitHub.
-2. Go to [vercel.com/new](https://vercel.com/new) and import the repo.
-3. Framework preset: **Next.js**
-4. Build command: `npm run build`
-5. Output: default (`.next`)
-6. Deploy
-
-Or use the Vercel CLI:
+This app is configured for **static export** (`output: "export"`). The build outputs static HTML/CSS/JS to the `out/` folder.
 
 ```bash
-npm i -g vercel
-vercel
+npm install
+npm run build
+npm run serve:static
 ```
 
-## Notes
+Open [http://localhost:3000](http://localhost:3000) (or the port shown by `serve`).
 
-- Map tiles use OpenStreetMap; geocoding uses Nominatim with a server route to avoid browser CORS issues.
-- Trip data is stored in the browser via Zustand `persist` (localStorage).
-- The legacy single-file version is preserved in `legacy/index.html`.
+Geocoding runs in the browser via Nominatim (with cache-busting) so no server API is required for static hosting. Deploy the `out/` folder to any static host (Vercel static, Netlify, GitHub Pages, S3, etc.).
+
+### Node server (optional)
+
+If you remove `output: "export"` from `next.config.ts` and restore the geocode API route, you can use:
+
+```bash
+npm run build
+npm run start
+```
