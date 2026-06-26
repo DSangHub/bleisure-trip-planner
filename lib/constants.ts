@@ -16,6 +16,23 @@ export const LEISURE_SUGGESTIONS = [
   "Neighborhood coffee crawl",
 ];
 
+export const DESTINATION_LEISURE_SUGGESTIONS: Record<string, string[]> = {
+  denver: [
+    "Scenic biking along Cherry Creek",
+    "Guided hike in the Rockies",
+    "City walking tour",
+    "Union Station food market",
+    "Red Rocks sunset viewpoint",
+  ],
+  lisbon: [
+    "Tagus river e-bike ride",
+    "Sintra hills hiking day",
+    "Alfama walking tour",
+    "Time Out Market food crawl",
+    "Miradouro sunset viewpoint",
+  ],
+};
+
 export const DEFAULT_CENTER: [number, number] = [38.7223, -9.1393];
 export const DEFAULT_ZOOM = 5;
 

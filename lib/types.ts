@@ -55,6 +55,26 @@ export interface GeocodeResult {
   displayName: string;
 }
 
+export type ActivityCategory =
+  | "biking"
+  | "hiking"
+  | "walking"
+  | "food"
+  | "museum"
+  | "coffee"
+  | "business"
+  | "explore"
+  | "default";
+
+export interface ActivityVendor {
+  id: string;
+  name: string;
+  description: string;
+  priceEstimate: string;
+  bookUrl: string;
+  ecoFriendly: boolean;
+}
+
 export interface SavedTrip {
   id: string;
   name: string;

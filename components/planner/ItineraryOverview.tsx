@@ -57,7 +57,7 @@ export function ItineraryOverview({ className = "" }: { className?: string }) {
         <Stat value={String(trip.leisureDays)} label="Leisure days" valueClass="text-fun" />
       </div>
 
-      <div id="day-list" className="day-list max-h-[28rem] space-y-3 overflow-y-auto pr-1 sm:max-h-[34rem] lg:max-h-[calc(100vh-18rem)]">
+      <div id="day-list" className="day-list max-h-[32rem] space-y-3 overflow-y-auto pr-1 sm:max-h-[40rem] lg:max-h-[calc(100vh-16rem)]">
         {!days.length ? (
           <div className="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-mist">
             Generate an itinerary to see your day-by-day plan.
@@ -67,6 +67,7 @@ export function ItineraryOverview({ className = "" }: { className?: string }) {
             <DayCard
               key={day.index}
               day={day}
+              destination={trip.destination}
               badgeClasses={badgeClasses(day.type)}
               onUpdateActivity={updateActivity}
               onAddActivity={addActivity}

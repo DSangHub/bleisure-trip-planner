@@ -162,6 +162,7 @@ export const useTripStore = create<TripState>()(
             total,
             trip.businessDays,
             trip.leisureDays,
+            trip.destination,
           );
           const hotels = getSolarHotels(trip.destination);
           const costs = {

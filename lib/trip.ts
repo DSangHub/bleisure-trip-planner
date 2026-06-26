@@ -1,5 +1,6 @@
 import {
   BUSINESS_SUGGESTIONS,
+  DESTINATION_LEISURE_SUGGESTIONS,
   LEISURE_SUGGESTIONS,
   SOLAR_HOTELS,
 } from "./constants";
@@ -85,6 +86,7 @@ export function buildDayPlan(
   total: number,
   businessDays: number,
   leisureDays: number,
+  destination = "",
 ): TripDay[] {
   const days: TripDay[] = [];
   const businessSlots = Array.from({ length: businessDays }, (_, index) => index);
@@ -104,19 +106,34 @@ export function buildDayPlan(
       type = "leisure";
     }
 
-    const suggestions =
-      type === "business"
-        ? BUSINESS_SUGGESTIONS
-        : type === "leisure"
-          ? LEISURE_SUGGESTIONS
-          : ["Travel day", "Buffer / admin", "Explore at your pace"];
+    const leisureSuggestions =
+      DESTINATION_LEISURE_SUGGESTIONS[destinationKey(destination)] ?? LEISURE_SUGGESTIONS;
+
+    let suggestionPool: string[];
+    let suggestionIndex: number;
+
+    if (type === "business") {
+      suggestionPool = BUSINESS_SUGGESTIONS;
+      suggestionIndex = businessSlots.indexOf(index);
+    } else if (type === "leisure") {
+      suggestionPool = leisureSuggestions;
+      suggestionIndex = leisureSlots.indexOf(index);
+    } else {
+      suggestionPool = ["Travel day", "Buffer / admin", "Explore at your pace"];
+      suggestionIndex = index;
+    }
+
+    const activity =
+      suggestionPool[
+        (suggestionIndex >= 0 ? suggestionIndex : index) % suggestionPool.length
+      ];
 
     days.push({
       index,
       date: toLocalDateString(date),
       label: formatDateLabel(date),
       type,
-      activities: [suggestions[index % suggestions.length]],
+      activities: [activity],
     });
   }
 
