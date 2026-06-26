@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import { formatMoney } from "./format";
+import { getPlatformLabel } from "./travel-platforms";
 import type {
   CostEstimate,
   SolarHotel,
@@ -199,7 +200,7 @@ export function exportItineraryPdf({
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.text(
-      `${formatMoney(hotel.nightlyRate)}/night   |   ${hotel.solarCoverage}% solar   |   ${hotel.rating.toFixed(1)} / 5`,
+      `${formatMoney(hotel.nightlyRate)}/night   |   ${hotel.solarCoverage}% solar   |   ${hotel.rating.toFixed(1)} / 5   |   ${getPlatformLabel(hotel.platform)}`,
       margin + 12,
       blockTop + 32,
     );

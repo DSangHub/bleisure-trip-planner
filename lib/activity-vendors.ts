@@ -1,88 +1,140 @@
 import { destinationKey } from "./format";
 import type { ActivityCategory, ActivityVendor, HikingVendorGroups } from "./types";
 
-type VendorCatalog = Partial<Record<ActivityCategory, ActivityVendor[]>>;
+type VendorSeed = Omit<ActivityVendor, "platform" | "rating" | "reviewCount"> &
+  Partial<Pick<ActivityVendor, "platform" | "rating" | "reviewCount">>;
+
+type VendorCatalog = Partial<Record<ActivityCategory, VendorSeed[]>>;
+
+function normalizeVendor(seed: VendorSeed): ActivityVendor {
+  return {
+    platform: seed.platform ?? "local",
+    rating: seed.rating ?? 4.6,
+    reviewCount: seed.reviewCount ?? 120,
+    ...seed,
+  };
+}
+
+function normalizeVendors(seeds: VendorSeed[]): ActivityVendor[] {
+  return seeds.map(normalizeVendor);
+}
 
 const DENVER_VENDORS: VendorCatalog = {
   biking: [
     {
-      id: "denver-suncycle",
-      name: "SunCycle Denver Rentals",
-      description: "Solar-charged e-bike fleet with Cherry Creek trail maps and helmet included.",
-      priceEstimate: "$38 / half day",
-      bookUrl: "#book-suncycle-denver",
+      id: "denver-viator-cherry-creek-ebike",
+      name: "Denver Cherry Creek E-Bike Sightseeing Tour",
+      description:
+        "Viator bestseller: guided e-bike ride along Cherry Creek Trail with skyline photo stops.",
+      priceEstimate: "From $49 / person",
+      bookUrl: "#affiliate-viator-denver-cherry-creek-ebike",
       ecoFriendly: true,
+      platform: "viator",
+      rating: 4.8,
+      reviewCount: 2140,
     },
     {
-      id: "denver-mile-high-bikes",
-      name: "Mile High Green Bikes",
-      description: "Conventional and e-bikes near Union Station; low-emission delivery to your hotel.",
-      priceEstimate: "$32 / half day",
-      bookUrl: "#book-mile-high-bikes",
+      id: "denver-gyg-bike-rental",
+      name: "Downtown Denver Bike Rental + GPS Route",
+      description:
+        "GetYourGuide pick: self-guided rental with solar-charging depot and helmet included.",
+      priceEstimate: "From $32 / half day",
+      bookUrl: "#affiliate-getyourguide-denver-bike-rental",
       ecoFriendly: true,
+      platform: "getyourguide",
+      rating: 4.7,
+      reviewCount: 986,
     },
     {
-      id: "denver-river-ride",
-      name: "Riverfront Ride Co.",
-      description: "Guided city cycling loop with brewery stops and bike-lane friendly routes.",
-      priceEstimate: "$55 / guided tour",
-      bookUrl: "#book-riverfront-ride",
-      ecoFriendly: false,
+      id: "denver-local-mile-high-bikes",
+      name: "Mile High Electric Bikes",
+      description:
+        "Local rental shop with e-bike fleet and hotel delivery near Union Station.",
+      priceEstimate: "$35 / half day",
+      bookUrl: "#affiliate-local-mile-high-bikes",
+      ecoFriendly: true,
+      platform: "local",
+      rating: 4.9,
+      reviewCount: 312,
     },
   ],
   hiking: [
     {
-      id: "denver-rocky-solar-guides",
-      name: "Rocky Solar Trail Guides",
-      description: "Small-group hikes in Rocky Mountain NP with carbon-offset transport from Denver.",
-      priceEstimate: "$145 / full day",
-      bookUrl: "#book-rocky-solar-guides",
+      id: "denver-gyg-rocky-mountain-hike",
+      name: "Rocky Mountain NP Small-Group Hike from Denver",
+      description:
+        "GetYourGuide original: full-day guided hike with carbon-offset transport and picnic.",
+      priceEstimate: "From $139 / person",
+      bookUrl: "#affiliate-getyourguide-denver-rocky-mountain-hike",
       ecoFriendly: true,
+      platform: "getyourguide",
+      rating: 4.9,
+      reviewCount: 3412,
       kind: "guided-tour",
     },
     {
-      id: "denver-front-range-hikes",
-      name: "Front Range Eco Hikes",
-      description: "Moderate guided hikes on Red Rocks and Mount Falcon with local naturalist.",
-      priceEstimate: "$89 / half day",
-      bookUrl: "#book-front-range-hikes",
+      id: "denver-viator-red-rocks-hike",
+      name: "Red Rocks & Mount Falcon Guided Hiking Day",
+      description:
+        "Viator top rated: moderate trails with naturalist guide and small-group format.",
+      priceEstimate: "From $89 / person",
+      bookUrl: "#affiliate-viator-denver-red-rocks-hike",
       ecoFriendly: true,
+      platform: "viator",
+      rating: 4.8,
+      reviewCount: 876,
       kind: "guided-tour",
     },
     {
-      id: "denver-continental-divide",
-      name: "Continental Divide Guided Treks",
-      description: "Full-day Rockies treks with flexible pace groups and trail lunch included.",
-      priceEstimate: "$165 / full day",
-      bookUrl: "#book-continental-divide-treks",
-      ecoFriendly: false,
-      kind: "guided-tour",
-    },
-    {
-      id: "denver-helios-trail-gear",
+      id: "denver-local-helios-trail-gear",
       name: "Helios Trail Gear Co.",
-      description: "Solar-powered rental hub for poles, packs, layers, and GPS — hotel delivery available.",
+      description:
+        "Local solar-powered rental hub for poles, packs, layers, and GPS — hotel delivery.",
       priceEstimate: "$42 / day kit",
-      bookUrl: "#book-helios-trail-gear",
+      bookUrl: "#affiliate-local-helios-trail-gear",
       ecoFriendly: true,
+      platform: "local",
+      rating: 4.8,
+      reviewCount: 204,
       kind: "gear-rental",
     },
     {
-      id: "denver-alpine-eco-outfitters",
+      id: "denver-local-alpine-eco-outfitters",
       name: "Alpine Eco Outfitters",
-      description: "Refurbished and low-impact hiking gear with reusable bottle and snack kit add-on.",
+      description:
+        "Refurbished hiking gear kits with reusable bottle and low-waste snack add-on.",
       priceEstimate: "$35 / day kit",
-      bookUrl: "#book-alpine-eco-outfitters",
+      bookUrl: "#affiliate-local-alpine-eco-outfitters",
       ecoFriendly: true,
+      platform: "local",
+      rating: 4.7,
+      reviewCount: 158,
       kind: "gear-rental",
     },
     {
-      id: "denver-rockies-rack-pack",
-      name: "Rockies Rack & Pack",
-      description: "Boots, backpacks, and bear canisters for self-guided Front Range day hikes.",
-      priceEstimate: "$48 / day kit",
-      bookUrl: "#book-rockies-rack-pack",
+      id: "denver-viator-rockies-trek",
+      name: "Full-Day Rockies Trek & Scenic Drive",
+      description:
+        "Viator classic: all-level Rockies day hike with gear rental option at checkout.",
+      priceEstimate: "From $120 / person",
+      bookUrl: "#affiliate-viator-denver-rockies-trek",
       ecoFriendly: false,
+      platform: "viator",
+      rating: 4.7,
+      reviewCount: 1254,
+      kind: "guided-tour",
+    },
+    {
+      id: "denver-local-rockies-rack-pack",
+      name: "Rockies Rack & Pack",
+      description:
+        "Local outfitter for boots, backpacks, and bear canisters on Front Range day hikes.",
+      priceEstimate: "$48 / day kit",
+      bookUrl: "#affiliate-local-rockies-rack-pack",
+      ecoFriendly: false,
+      platform: "local",
+      rating: 4.6,
+      reviewCount: 421,
       kind: "gear-rental",
     },
   ],
@@ -191,75 +243,107 @@ const DENVER_VENDORS: VendorCatalog = {
 const LISBON_VENDORS: VendorCatalog = {
   biking: [
     {
-      id: "lisbon-ebike-tagus",
-      name: "Tagus E-Bike Adventures",
-      description: "Solar-charged e-bikes along the riverfront with Belém stop and helmet kit.",
-      priceEstimate: "€35 / half day",
-      bookUrl: "#book-tagus-ebike",
+      id: "lisbon-viator-tagus-ebike",
+      name: "Lisbon Tagus River E-Bike Tour",
+      description:
+        "Viator favorite: guided e-bike ride along the waterfront with Belém landmarks.",
+      priceEstimate: "From €42 / person",
+      bookUrl: "#affiliate-viator-lisbon-tagus-ebike",
       ecoFriendly: true,
+      platform: "viator",
+      rating: 4.8,
+      reviewCount: 1678,
     },
     {
-      id: "lisbon-alfama-bikes",
+      id: "lisbon-gyg-bike-rental",
+      name: "Lisbon Hills E-Bike Rental & Route App",
+      description:
+        "GetYourGuide choice: solar-charging pickup point and helmet kit for self-guided rides.",
+      priceEstimate: "From €28 / half day",
+      bookUrl: "#affiliate-getyourguide-lisbon-bike-rental",
+      ecoFriendly: true,
+      platform: "getyourguide",
+      rating: 4.7,
+      reviewCount: 743,
+    },
+    {
+      id: "lisbon-local-alfama-cycles",
       name: "Alfama Green Cycles",
-      description: "Compact city bikes for hill-friendly routes; hotel delivery available.",
-      priceEstimate: "€28 / half day",
-      bookUrl: "#book-alfama-cycles",
+      description:
+        "Local shop with compact city bikes for hill-friendly routes and hotel delivery.",
+      priceEstimate: "€26 / half day",
+      bookUrl: "#affiliate-local-alfama-cycles",
       ecoFriendly: true,
-    },
-    {
-      id: "lisbon-coastal-ride",
-      name: "Cascais Coastal Ride Co.",
-      description: "Guided coastal cycling day trip with train return from Cais do Sodré.",
-      priceEstimate: "€75 / guided tour",
-      bookUrl: "#book-cascais-ride",
-      ecoFriendly: false,
+      platform: "local",
+      rating: 4.9,
+      reviewCount: 289,
     },
   ],
   hiking: [
     {
-      id: "lisbon-sintra-eco",
-      name: "Sintra Eco Trail Guides",
-      description: "Guided forest hikes in Sintra-Cascais Natural Park with picnic option.",
-      priceEstimate: "€95 / full day",
-      bookUrl: "#book-sintra-eco-trails",
+      id: "lisbon-gyg-sintra-hike",
+      name: "Sintra Forest & Palaces Guided Hike",
+      description:
+        "GetYourGuide bestseller: full-day Sintra trails with picnic and small-group guide.",
+      priceEstimate: "From €95 / person",
+      bookUrl: "#affiliate-getyourguide-lisbon-sintra-hike",
       ecoFriendly: true,
+      platform: "getyourguide",
+      rating: 4.9,
+      reviewCount: 2891,
       kind: "guided-tour",
     },
     {
-      id: "lisbon-monsanto-walks",
-      name: "Monsanto Park Hiking Club",
-      description: "Urban nature reserve trails minutes from downtown; morning departures.",
-      priceEstimate: "€45 / half day",
-      bookUrl: "#book-monsanto-hikes",
+      id: "lisbon-viator-arrabida-hike",
+      name: "Arrábida Coastal Trail Day Hike",
+      description:
+        "Viator top rated: cliffside paths south of Lisbon with transport from city center.",
+      priceEstimate: "From €110 / person",
+      bookUrl: "#affiliate-viator-lisbon-arrabida-hike",
       ecoFriendly: true,
+      platform: "viator",
+      rating: 4.8,
+      reviewCount: 654,
       kind: "guided-tour",
     },
     {
-      id: "lisbon-arrabida-trails",
-      name: "Arrábida Coastal Trails",
-      description: "Moderate cliffside hike south of Lisbon with small-group guide.",
-      priceEstimate: "€110 / full day",
-      bookUrl: "#book-arrabida-trails",
-      ecoFriendly: false,
-      kind: "guided-tour",
-    },
-    {
-      id: "lisbon-trail-kit-rentals",
+      id: "lisbon-local-trail-kit",
       name: "Tagus Trail Kit Rentals",
-      description: "Day-hike packs, poles, and layers with reusable water flask included.",
+      description:
+        "Local day-hike packs, poles, and layers with reusable flask included.",
       priceEstimate: "€30 / day kit",
-      bookUrl: "#book-tagus-trail-kit",
+      bookUrl: "#affiliate-local-tagus-trail-kit",
       ecoFriendly: true,
+      platform: "local",
+      rating: 4.7,
+      reviewCount: 176,
       kind: "gear-rental",
     },
     {
-      id: "lisbon-sintra-gear",
+      id: "lisbon-local-sintra-gear",
       name: "Sintra Green Gear Co.",
-      description: "Eco-refurbished boots and backpacks for Sintra hill trails.",
+      description:
+        "Eco-refurbished boots and backpacks for Sintra hill trails; morning pickup.",
       priceEstimate: "€28 / day kit",
-      bookUrl: "#book-sintra-green-gear",
+      bookUrl: "#affiliate-local-sintra-green-gear",
       ecoFriendly: true,
+      platform: "local",
+      rating: 4.8,
+      reviewCount: 132,
       kind: "gear-rental",
+    },
+    {
+      id: "lisbon-gyg-monsanto-hike",
+      name: "Monsanto Park Nature Hike",
+      description:
+        "GetYourGuide urban escape: guided nature reserve trails minutes from downtown.",
+      priceEstimate: "From €45 / person",
+      bookUrl: "#affiliate-getyourguide-lisbon-monsanto-hike",
+      ecoFriendly: true,
+      platform: "getyourguide",
+      rating: 4.7,
+      reviewCount: 512,
+      kind: "guided-tour",
     },
   ],
   walking: [
@@ -570,8 +654,8 @@ function getAllCategoryVendors(
   const catalog = VENDOR_CATALOG[key] ?? VENDOR_CATALOG.default;
   const defaultCatalog = VENDOR_CATALOG.default;
 
-  const specific = catalog[category] ?? [];
-  const fallback = defaultCatalog[category] ?? defaultCatalog.default ?? [];
+  const specific = normalizeVendors(catalog[category] ?? []);
+  const fallback = normalizeVendors(defaultCatalog[category] ?? defaultCatalog.default ?? []);
 
   return sortEcoFirst(dedupeVendors([...specific, ...fallback]));
 }

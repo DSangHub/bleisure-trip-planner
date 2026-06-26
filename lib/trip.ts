@@ -2,8 +2,8 @@ import {
   BUSINESS_SUGGESTIONS,
   DESTINATION_LEISURE_SUGGESTIONS,
   LEISURE_SUGGESTIONS,
-  SOLAR_HOTELS,
 } from "./constants";
+import { getLodgingListings } from "./lodging-listings";
 import {
   getDestinationValidationError,
   normalizeDestination,
@@ -141,7 +141,7 @@ export function buildDayPlan(
 }
 
 export function getSolarHotels(destination: string): SolarHotel[] {
-  return SOLAR_HOTELS[destinationKey(destination)] ?? SOLAR_HOTELS.default;
+  return getLodgingListings(destination);
 }
 
 export function averageHotelRate(hotels: SolarHotel[]): number {

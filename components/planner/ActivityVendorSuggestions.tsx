@@ -6,6 +6,9 @@ import {
   getActivityVendors,
   getHikingVendorGroups,
 } from "@/lib/activity-vendors";
+import { ListingRating } from "@/components/ui/ListingRating";
+import { PlatformBadge } from "@/components/ui/PlatformBadge";
+import { PlatformDataNote } from "@/components/ui/PlatformDataNote";
 import type { ActivityVendor, HikingVendorKind } from "@/lib/types";
 
 export function ActivityVendorSuggestions({
@@ -55,6 +58,8 @@ export function ActivityVendorSuggestions({
           ))}
         </div>
       )}
+
+      <PlatformDataNote className="mt-3 border-t border-line/60 pt-2" />
     </div>
   );
 }
@@ -85,31 +90,33 @@ function VendorCard({ vendor }: { vendor: ActivityVendor }) {
 
   return (
     <article className="flex h-full flex-col rounded-lg border border-line bg-ink/50 p-3">
-      <div className="mb-1 flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h4 className="text-sm font-semibold leading-snug text-slate-100">{vendor.name}</h4>
-          {subtype ? (
-            <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wide text-mist">
-              {subtype}
-            </p>
-          ) : null}
-        </div>
+      <div className="mb-1 flex flex-wrap items-center gap-1.5">
+        <PlatformBadge platform={vendor.platform} />
         {vendor.ecoFriendly ? (
           <span
-            className="shrink-0 rounded-full border border-solar/35 bg-solar/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-200"
+            className="rounded-full border border-solar/35 bg-solar/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-200"
             title="Eco or solar-friendly operator"
           >
             Eco
           </span>
         ) : null}
       </div>
+      <div className="mb-1 min-w-0">
+        <h4 className="text-sm font-semibold leading-snug text-slate-100">{vendor.name}</h4>
+        {subtype ? (
+          <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wide text-mist">
+            {subtype}
+          </p>
+        ) : null}
+      </div>
       <p className="mb-2 flex-1 text-xs leading-relaxed text-mist">{vendor.description}</p>
-      <div className="mt-auto flex items-center justify-between gap-2 pt-1">
+      <ListingRating rating={vendor.rating} reviewCount={vendor.reviewCount} />
+      <div className="mt-2 flex items-center justify-between gap-2 pt-1">
         <span className="text-xs font-medium text-sky">{vendor.priceEstimate}</span>
         <a
           href={vendor.bookUrl}
           className="inline-flex shrink-0 items-center justify-center rounded-xl border border-solar/35 bg-solar/10 px-3 py-1.5 text-xs font-medium text-amber-200 transition hover:-translate-y-0.5"
-          aria-label={`Book ${vendor.name} (placeholder)`}
+          aria-label={`Book ${vendor.name} via ${vendor.platform} (placeholder)`}
         >
           Book
         </a>

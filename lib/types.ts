@@ -1,3 +1,5 @@
+import type { TravelPlatform } from "./travel-platforms";
+
 export type DayType = "business" | "leisure" | "open";
 
 export interface TripDay {
@@ -42,11 +44,17 @@ export interface CostEstimate {
 }
 
 export interface SolarHotel {
+  id: string;
   name: string;
+  propertyType: string;
   nightlyRate: number;
   solarCoverage: number;
   rating: number;
+  reviewCount: number;
   highlight: string;
+  platform: TravelPlatform;
+  bookUrl: string;
+  ecoFriendly: boolean;
 }
 
 export interface GeocodeResult {
@@ -75,6 +83,9 @@ export interface ActivityVendor {
   priceEstimate: string;
   bookUrl: string;
   ecoFriendly: boolean;
+  platform: TravelPlatform;
+  rating: number;
+  reviewCount: number;
   kind?: HikingVendorKind;
 }
 
