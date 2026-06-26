@@ -15,6 +15,7 @@ export async function geocodeDestinationClient(
   url.searchParams.set("format", "json");
   url.searchParams.set("limit", "1");
   url.searchParams.set("cb", String(Date.now()));
+  url.searchParams.set("addressdetails", "0");
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), GEOCODE_TIMEOUT_MS);
@@ -26,6 +27,7 @@ export async function geocodeDestinationClient(
       },
       signal: controller.signal,
       cache: "no-store",
+      referrerPolicy: "origin",
     });
 
     if (!response.ok) {

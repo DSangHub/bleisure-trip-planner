@@ -4,7 +4,6 @@ import { useToastStore } from "@/store/toast-store";
 import { DEFAULT_COST_INPUTS } from "@/lib/constants";
 import { estimateCosts } from "@/lib/costs";
 import { createTripId, defaultTripDates } from "@/lib/format";
-import { geocodeDestinationClient } from "@/lib/geocode-client";
 import {
   averageHotelRate,
   buildDayPlan,
@@ -88,7 +87,10 @@ function recomputeCosts(
 
 export const useTripStore = create<TripState>()(
   persist(
-    (set, get) => ({
+    (set, get) => {
+      let generationToken = 0;
+
+      return {
       trip: defaultTrip,
       days: [],
       hotels: [],
@@ -144,10 +146,15 @@ export const useTripStore = create<TripState>()(
         })),
 
       generateItinerary: async () => {
-        const state = get();
+        if (get().isGenerating) {
+          return;
+        }
+
+        const token = ++generationToken;
         set({ isGenerating: true, statusMessage: "" });
 
         try {
+          const state = get();
           const trip = normalizeTripForm(state.trip);
           const { start, total } = validateTrip(trip);
           const days = buildDayPlan(
@@ -162,6 +169,11 @@ export const useTripStore = create<TripState>()(
             nightly: averageHotelRate(hotels),
           };
           const { costEstimate, tip } = recomputeCosts(trip, days, costs, hotels);
+          const message = `Itinerary generated for ${trip.destination}.`;
+
+          if (token !== generationToken) {
+            return;
+          }
 
           set({
             trip,
@@ -170,33 +182,22 @@ export const useTripStore = create<TripState>()(
             costs,
             costEstimate,
             tip,
-            statusMessage: `Itinerary generated for ${trip.destination}.`,
-          });
-          useToastStore
-            .getState()
-            .showToast(`Itinerary ready for ${trip.destination}.`, "success");
-
-          set({ mapStatus: `Locating ${trip.destination}...` });
-          const geocode = await geocodeDestinationClient(trip.destination);
-          if (!geocode) {
-            set({
-              geocode: null,
-              mapStatus: `No map match found for "${trip.destination}". Itinerary was still generated.`,
-            });
-          } else {
-            set({
-              geocode,
-              mapStatus: `Showing ${trip.destination} on the map.`,
-            });
-          }
-        } catch (error) {
-          const message = error instanceof Error ? error.message : "Could not generate itinerary.";
-          set({
             statusMessage: message,
+            geocode: null,
+            mapStatus: `Locating ${trip.destination}...`,
           });
+          useToastStore.getState().showToast(`Itinerary ready for ${trip.destination}.`, "success");
+        } catch (error) {
+          if (token !== generationToken) {
+            return;
+          }
+          const message = error instanceof Error ? error.message : "Could not generate itinerary.";
+          set({ statusMessage: message });
           useToastStore.getState().showToast(message, "error");
         } finally {
-          set({ isGenerating: false });
+          if (token === generationToken) {
+            set({ isGenerating: false });
+          }
         }
       },
 
@@ -278,6 +279,7 @@ export const useTripStore = create<TripState>()(
       },
 
       resetPlanner: () => {
+        generationToken += 1;
         const dates = defaultTripDates();
         set({
           trip: { ...defaultTrip, ...dates },
@@ -288,10 +290,12 @@ export const useTripStore = create<TripState>()(
           tip: "Planner reset. Start a fresh bleisure itinerary.",
           mapStatus: "Enter a destination to preview it on the map.",
           geocode: null,
+          isGenerating: false,
           statusMessage: "",
         });
       },
-    }),
+    };
+    },
     {
       name: "bleisure-trip-planner-next",
       version: 2,

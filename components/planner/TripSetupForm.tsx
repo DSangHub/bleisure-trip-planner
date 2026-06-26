@@ -21,6 +21,10 @@ export function TripSetupForm() {
   const resetPlanner = useTripStore((state) => state.resetPlanner);
   const showToast = useToastStore((state) => state.showToast);
 
+  const handleGenerate = async () => {
+    await generateItinerary();
+  };
+
   const handleSave = () => {
     saveCurrentTrip();
   };
@@ -53,7 +57,7 @@ export function TripSetupForm() {
         className="space-y-4"
         onSubmit={(event) => {
           event.preventDefault();
-          void generateItinerary();
+          void handleGenerate();
         }}
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

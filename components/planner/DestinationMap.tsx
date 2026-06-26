@@ -57,7 +57,11 @@ export function DestinationMap() {
 
   useEffect(() => {
     const destination = trip.destination.trim();
-    if (!destination || destination === lastQuery.current) {
+    if (!destination) {
+      return;
+    }
+
+    if (destination === lastQuery.current && geocode) {
       return;
     }
 
@@ -68,15 +72,16 @@ export function DestinationMap() {
     debounceRef.current = setTimeout(async () => {
       useTripStore.getState().setMapStatus(`Locating ${destination}...`);
       try {
-        const geocode = await geocodeDestinationClient(destination);
-        if (!geocode) {
+        const result = await geocodeDestinationClient(destination);
+        if (!result) {
           useTripStore.getState().setGeocode(null);
           useTripStore.getState().setMapStatus(
             `No map match found for "${destination}". Try a city and country.`,
           );
+          lastQuery.current = destination;
           return;
         }
-        useTripStore.getState().setGeocode(geocode);
+        useTripStore.getState().setGeocode(result);
         useTripStore.getState().setMapStatus(`Showing ${destination} on the map.`);
         lastQuery.current = destination;
       } catch {
@@ -89,7 +94,7 @@ export function DestinationMap() {
         clearTimeout(debounceRef.current);
       }
     };
-  }, [trip.destination]);
+  }, [trip.destination, geocode]);
 
   const center: [number, number] = geocode
     ? [geocode.lat, geocode.lon]
