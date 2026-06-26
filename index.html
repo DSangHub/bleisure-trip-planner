@@ -1,372 +1,228 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bleisure Trip Planner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  >
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: "#0f1419",
+            panel: "#1a2332",
+            panel2: "#243044",
+            line: "#2f3f57",
+            mist: "#94a3b8",
+            sky: "#38bdf8",
+            violet: "#818cf8",
+            biz: "#f59e0b",
+            fun: "#34d399",
+          },
+          boxShadow: {
+            glow: "0 18px 50px rgba(0, 0, 0, 0.35)",
+          },
+        },
+      },
+    };
+  </script>
   <style>
-    :root {
-      --bg: #0f1419;
-      --surface: #1a2332;
-      --surface-2: #243044;
-      --border: #2f3f57;
-      --text: #e8edf5;
-      --muted: #94a3b8;
-      --accent: #38bdf8;
-      --accent-2: #818cf8;
-      --business: #f59e0b;
-      --leisure: #34d399;
-      --danger: #f87171;
-      --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
-      --radius: 16px;
+    #map {
+      z-index: 0;
     }
 
-    * {
-      box-sizing: border-box;
+    .leaflet-container {
+      font-family: inherit;
     }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 28%),
-        radial-gradient(circle at top right, rgba(129, 140, 248, 0.16), transparent 24%),
-        var(--bg);
-      line-height: 1.5;
-    }
-
-    .container {
-      width: min(1120px, calc(100% - 2rem));
-      margin: 0 auto;
-      padding: 2.5rem 0 3rem;
-    }
-
-    header {
-      margin-bottom: 2rem;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.35rem 0.75rem;
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      border-radius: 999px;
-      color: var(--accent);
-      font-size: 0.85rem;
-      background: rgba(56, 189, 248, 0.08);
-    }
-
-    h1 {
-      margin: 1rem 0 0.5rem;
-      font-size: clamp(2rem, 4vw, 3rem);
-      letter-spacing: -0.03em;
-    }
-
-    .subtitle {
-      max-width: 62ch;
-      color: var(--muted);
-      font-size: 1.05rem;
-    }
-
-    .layout {
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 1.25rem;
-      align-items: start;
-    }
-
-    .card {
-      background: rgba(26, 35, 50, 0.92);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 1.25rem;
-      backdrop-filter: blur(10px);
-    }
-
-    .card h2 {
-      margin: 0 0 1rem;
-      font-size: 1.1rem;
-    }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.9rem;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 0.35rem;
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    input,
-    select,
-    textarea,
-    button {
-      font: inherit;
-    }
-
-    input,
-    select,
-    textarea {
-      width: 100%;
-      padding: 0.75rem 0.85rem;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: var(--surface-2);
-      color: var(--text);
-    }
-
-    input:focus,
-    select:focus,
-    textarea:focus {
-      outline: 2px solid rgba(56, 189, 248, 0.35);
-      border-color: var(--accent);
-    }
-
-    textarea {
-      min-height: 96px;
-      resize: vertical;
-    }
-
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      margin-top: 1rem;
-    }
-
-    button {
-      border: 0;
-      border-radius: 12px;
-      padding: 0.8rem 1rem;
-      cursor: pointer;
-      transition: transform 0.15s ease, opacity 0.15s ease;
-    }
-
-    button:hover {
-      transform: translateY(-1px);
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      color: #081018;
-      font-weight: 700;
-    }
-
-    .btn-secondary {
-      background: var(--surface-2);
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-
-    .btn-danger {
-      background: rgba(248, 113, 113, 0.12);
-      color: var(--danger);
-      border: 1px solid rgba(248, 113, 113, 0.35);
-    }
-
-    .summary {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.75rem;
-      margin-bottom: 1rem;
-    }
-
-    .stat {
-      padding: 0.9rem;
-      border-radius: 14px;
-      background: rgba(15, 20, 25, 0.55);
-      border: 1px solid var(--border);
-    }
-
-    .stat strong {
-      display: block;
-      font-size: 1.4rem;
-      margin-bottom: 0.15rem;
-    }
-
-    .stat span {
-      color: var(--muted);
-      font-size: 0.85rem;
-    }
-
-    .stat.business strong { color: var(--business); }
-    .stat.leisure strong { color: var(--leisure); }
-    .stat.total strong { color: var(--accent); }
 
     .day-list {
-      display: grid;
-      gap: 0.75rem;
-      max-height: 58vh;
-      overflow: auto;
-      padding-right: 0.25rem;
-    }
-
-    .day-card {
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 0.9rem;
-      background: rgba(15, 20, 25, 0.45);
-    }
-
-    .day-card header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .day-title {
-      font-weight: 700;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.2rem 0.55rem;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .badge.business {
-      color: #92400e;
-      background: rgba(245, 158, 11, 0.18);
-    }
-
-    .badge.leisure {
-      color: #065f46;
-      background: rgba(52, 211, 153, 0.18);
-    }
-
-    .activity-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 0.5rem;
-      margin-top: 0.5rem;
-    }
-
-    .empty-state {
-      padding: 1.25rem;
-      border: 1px dashed var(--border);
-      border-radius: 14px;
-      color: var(--muted);
-      text-align: center;
-    }
-
-    .tips {
-      margin-top: 1rem;
-      padding: 0.9rem 1rem;
-      border-radius: 14px;
-      background: rgba(56, 189, 248, 0.08);
-      border: 1px solid rgba(56, 189, 248, 0.18);
-      color: #cbd5e1;
-      font-size: 0.92rem;
-    }
-
-    @media (max-width: 900px) {
-      .layout,
-      .grid-2,
-      .summary {
-        grid-template-columns: 1fr;
-      }
+      scrollbar-width: thin;
+      scrollbar-color: #2f3f57 transparent;
     }
   </style>
 </head>
-<body>
-  <div class="container">
-    <header>
-      <div class="eyebrow">Business + Leisure</div>
-      <h1>Bleisure Trip Planner</h1>
-      <p class="subtitle">
-        Balance meetings and downtime in one itinerary. Set your trip details, split business and leisure days,
-        and build a day-by-day plan you can revisit anytime.
+<body class="min-h-full bg-ink text-slate-100 antialiased">
+  <div class="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(129,140,248,0.16),transparent_24%)]"></div>
+
+  <div class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
+    <header class="mb-6 sm:mb-8">
+      <div class="inline-flex items-center rounded-full border border-sky/25 bg-sky/10 px-3 py-1 text-xs font-medium text-sky sm:text-sm">
+        Business + Leisure
+      </div>
+      <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
+        Bleisure Trip Planner
+      </h1>
+      <p class="mt-2 max-w-2xl text-sm leading-relaxed text-mist sm:text-base">
+        Balance meetings and downtime in one itinerary. Set your trip details, preview the destination on the map,
+        split business and leisure days, and build a plan you can revisit anytime.
       </p>
     </header>
 
-    <div class="layout">
-      <section class="card">
-        <h2>Trip setup</h2>
-        <form id="trip-form">
-          <div class="grid-2">
-            <div>
-              <label for="destination">Destination</label>
-              <input id="destination" name="destination" placeholder="Lisbon, Portugal" required>
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5 xl:gap-6">
+      <div class="flex flex-col gap-4 lg:col-span-5 xl:col-span-5">
+        <section class="rounded-2xl border border-line bg-panel/95 p-4 shadow-glow backdrop-blur sm:p-5">
+          <h2 class="mb-4 text-lg font-semibold">Trip setup</h2>
+          <form id="trip-form" class="space-y-4">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div class="sm:col-span-2">
+                <label for="destination" class="mb-1.5 block text-sm text-mist">Destination</label>
+                <input
+                  id="destination"
+                  name="destination"
+                  placeholder="Lisbon, Portugal"
+                  required
+                  class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30 sm:text-base"
+                >
+              </div>
+              <div>
+                <label for="traveler" class="mb-1.5 block text-sm text-mist">Traveler name</label>
+                <input
+                  id="traveler"
+                  name="traveler"
+                  placeholder="Alex Rivera"
+                  class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30 sm:text-base"
+                >
+              </div>
+              <div>
+                <label for="start-date" class="mb-1.5 block text-sm text-mist">Start date</label>
+                <input
+                  id="start-date"
+                  name="startDate"
+                  type="date"
+                  required
+                  class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30 sm:text-base"
+                >
+              </div>
+              <div>
+                <label for="end-date" class="mb-1.5 block text-sm text-mist">End date</label>
+                <input
+                  id="end-date"
+                  name="endDate"
+                  type="date"
+                  required
+                  class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30 sm:text-base"
+                >
+              </div>
+              <div>
+                <label for="business-days" class="mb-1.5 block text-sm text-mist">Business days</label>
+                <input
+                  id="business-days"
+                  name="businessDays"
+                  type="number"
+                  min="0"
+                  value="3"
+                  class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30 sm:text-base"
+                >
+              </div>
+              <div>
+                <label for="leisure-days" class="mb-1.5 block text-sm text-mist">Leisure days</label>
+                <input
+                  id="leisure-days"
+                  name="leisureDays"
+                  type="number"
+                  min="0"
+                  value="2"
+                  class="w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30 sm:text-base"
+                >
+              </div>
             </div>
-            <div>
-              <label for="traveler">Traveler name</label>
-              <input id="traveler" name="traveler" placeholder="Alex Rivera">
-            </div>
-            <div>
-              <label for="start-date">Start date</label>
-              <input id="start-date" name="startDate" type="date" required>
-            </div>
-            <div>
-              <label for="end-date">End date</label>
-              <input id="end-date" name="endDate" type="date" required>
-            </div>
-            <div>
-              <label for="business-days">Business days</label>
-              <input id="business-days" name="businessDays" type="number" min="0" value="3">
-            </div>
-            <div>
-              <label for="leisure-days">Leisure days</label>
-              <input id="leisure-days" name="leisureDays" type="number" min="0" value="2">
-            </div>
-          </div>
 
-          <div style="margin-top: 0.9rem;">
-            <label for="notes">Trip notes</label>
-            <textarea id="notes" name="notes" placeholder="Client dinner on Tuesday, team offsite Wednesday morning..."></textarea>
-          </div>
+            <div>
+              <label for="notes" class="mb-1.5 block text-sm text-mist">Trip notes</label>
+              <textarea
+                id="notes"
+                name="notes"
+                placeholder="Client dinner on Tuesday, team offsite Wednesday morning..."
+                class="min-h-24 w-full resize-y rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30 sm:text-base"
+              ></textarea>
+            </div>
 
-          <div class="actions">
-            <button class="btn-primary" type="submit">Generate itinerary</button>
-            <button class="btn-secondary" type="button" id="save-btn">Save plan</button>
-            <button class="btn-danger" type="button" id="reset-btn">Reset</button>
-          </div>
-        </form>
+            <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <button
+                type="submit"
+                class="w-full rounded-xl bg-gradient-to-r from-sky to-violet px-4 py-2.5 text-sm font-semibold text-ink transition hover:-translate-y-0.5 sm:w-auto sm:min-w-[10rem]"
+              >
+                Generate itinerary
+              </button>
+              <button
+                type="button"
+                id="save-btn"
+                class="w-full rounded-xl border border-line bg-panel2 px-4 py-2.5 text-sm font-medium text-slate-100 transition hover:-translate-y-0.5 sm:w-auto"
+              >
+                Save plan
+              </button>
+              <button
+                type="button"
+                id="reset-btn"
+                class="w-full rounded-xl border border-red-400/35 bg-red-400/10 px-4 py-2.5 text-sm font-medium text-red-300 transition hover:-translate-y-0.5 sm:w-auto"
+              >
+                Reset
+              </button>
+            </div>
+          </form>
 
-        <div class="tips" id="tips">
-          Tip: Keep at least one leisure day after heavy meeting blocks to recover and explore.
+          <div id="tips" class="mt-4 rounded-xl border border-sky/20 bg-sky/10 px-3 py-2.5 text-sm text-slate-300">
+            Tip: Keep at least one leisure day after heavy meeting blocks to recover and explore.
+          </div>
+        </section>
+
+        <section class="rounded-2xl border border-line bg-panel/95 p-4 shadow-glow backdrop-blur sm:p-5">
+          <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <h2 class="text-lg font-semibold">Destination map</h2>
+            <p id="map-status" class="text-xs text-mist sm:text-sm">Enter a destination to preview it on the map.</p>
+          </div>
+          <div
+            id="map"
+            class="h-56 w-full overflow-hidden rounded-xl border border-line bg-panel2 sm:h-72 lg:h-80"
+            role="region"
+            aria-label="Destination map"
+          ></div>
+        </section>
+      </div>
+
+      <section class="rounded-2xl border border-line bg-panel/95 p-4 shadow-glow backdrop-blur sm:p-5 lg:col-span-7 xl:col-span-7">
+        <h2 class="mb-4 text-lg font-semibold">Itinerary overview</h2>
+
+        <div class="mb-4 grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
+          <div class="rounded-xl border border-line bg-ink/55 p-3 sm:p-4">
+            <strong id="total-days" class="block text-2xl font-semibold text-sky">0</strong>
+            <span class="text-xs text-mist sm:text-sm">Total days</span>
+          </div>
+          <div class="rounded-xl border border-line bg-ink/55 p-3 sm:p-4">
+            <strong id="summary-business" class="block text-2xl font-semibold text-biz">0</strong>
+            <span class="text-xs text-mist sm:text-sm">Business days</span>
+          </div>
+          <div class="rounded-xl border border-line bg-ink/55 p-3 sm:p-4">
+            <strong id="summary-leisure" class="block text-2xl font-semibold text-fun">0</strong>
+            <span class="text-xs text-mist sm:text-sm">Leisure days</span>
+          </div>
         </div>
-      </section>
 
-      <section class="card">
-        <h2>Itinerary overview</h2>
-        <div class="summary">
-          <div class="stat total">
-            <strong id="total-days">0</strong>
-            <span>Total days</span>
+        <div id="day-list" class="day-list max-h-[28rem] space-y-3 overflow-y-auto pr-1 sm:max-h-[34rem] lg:max-h-[calc(100vh-18rem)]">
+          <div class="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-mist">
+            Generate an itinerary to see your day-by-day plan.
           </div>
-          <div class="stat business">
-            <strong id="summary-business">0</strong>
-            <span>Business days</span>
-          </div>
-          <div class="stat leisure">
-            <strong id="summary-leisure">0</strong>
-            <span>Leisure days</span>
-          </div>
-        </div>
-        <div class="day-list" id="day-list">
-          <div class="empty-state">Generate an itinerary to see your day-by-day plan.</div>
         </div>
       </section>
     </div>
   </div>
 
   <script>
-    const STORAGE_KEY = "bleisure-trip-planner-v1";
+    const STORAGE_KEY = "bleisure-trip-planner-v2";
+    const DEFAULT_CENTER = [38.7223, -9.1393];
+    const DEFAULT_ZOOM = 5;
 
     const form = document.getElementById("trip-form");
     const dayList = document.getElementById("day-list");
@@ -374,6 +230,7 @@
     const summaryBusinessEl = document.getElementById("summary-business");
     const summaryLeisureEl = document.getElementById("summary-leisure");
     const tipsEl = document.getElementById("tips");
+    const mapStatusEl = document.getElementById("map-status");
 
     const fields = {
       destination: document.getElementById("destination"),
@@ -401,6 +258,24 @@
       "Neighborhood coffee crawl",
     ];
 
+    let currentDays = [];
+    let mapInstance = null;
+    let destinationMarker = null;
+    let geocodeTimer = null;
+    let lastGeocodedDestination = "";
+
+    const mapInstanceRef = L.map("map", {
+      scrollWheelZoom: false,
+      tap: true,
+    }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+
+    mapInstance = mapInstanceRef;
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(mapInstance);
+
     function parseDate(value) {
       const [year, month, day] = value.split("-").map(Number);
       return new Date(year, month - 1, day);
@@ -417,6 +292,14 @@
     function dayCount(start, end) {
       const msPerDay = 24 * 60 * 60 * 1000;
       return Math.round((end - start) / msPerDay) + 1;
+    }
+
+    function escapeHtml(value) {
+      return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
     }
 
     function getFormData() {
@@ -487,58 +370,74 @@
       return days;
     }
 
+    function badgeClasses(type) {
+      if (type === "business") {
+        return "bg-amber-400/15 text-amber-200";
+      }
+      if (type === "leisure") {
+        return "bg-emerald-400/15 text-emerald-200";
+      }
+      return "bg-slate-400/15 text-slate-200";
+    }
+
     function renderDays(days) {
       if (!days.length) {
-        dayList.innerHTML = '<div class="empty-state">Generate an itinerary to see your day-by-day plan.</div>';
+        dayList.innerHTML = `
+          <div class="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-mist">
+            Generate an itinerary to see your day-by-day plan.
+          </div>
+        `;
         return;
       }
 
       dayList.innerHTML = days.map((day) => {
-        const badgeClass = day.type === "business" ? "business" : day.type === "leisure" ? "leisure" : "";
         const badgeLabel = day.type === "open" ? "Flexible" : day.type;
 
         const activities = day.activities.map((activity, activityIndex) => `
-          <div class="activity-row">
+          <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
             <input
               type="text"
               value="${escapeHtml(activity)}"
               data-day-index="${day.index}"
               data-activity-index="${activityIndex}"
               aria-label="Activity for ${day.label}"
+              class="w-full flex-1 rounded-xl border border-line bg-panel2 px-3 py-2 text-sm outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/30"
             >
             <button
-              class="btn-danger"
               type="button"
               data-remove-day="${day.index}"
               data-remove-activity="${activityIndex}"
-            >Remove</button>
+              class="w-full rounded-xl border border-red-400/35 bg-red-400/10 px-3 py-2 text-sm font-medium text-red-300 transition hover:-translate-y-0.5 sm:w-auto sm:shrink-0"
+            >
+              Remove
+            </button>
           </div>
         `).join("");
 
         return `
-          <article class="day-card" data-day-index="${day.index}">
-            <header>
+          <article class="rounded-xl border border-line bg-ink/45 p-3 sm:p-4" data-day-index="${day.index}">
+            <header class="mb-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <div class="day-title">${day.label}</div>
-                <div style="color: var(--muted); font-size: 0.85rem;">${day.date}</div>
+                <div class="font-semibold">${day.label}</div>
+                <div class="text-xs text-mist sm:text-sm">${day.date}</div>
               </div>
-              <span class="badge ${badgeClass}">${badgeLabel}</span>
+              <span class="inline-flex w-fit rounded-full px-2.5 py-1 text-[0.7rem] font-bold uppercase tracking-wide ${badgeClasses(day.type)}">
+                ${badgeLabel}
+              </span>
             </header>
             ${activities}
-            <div class="actions" style="margin-top: 0.75rem;">
-              <button class="btn-secondary" type="button" data-add-activity="${day.index}">Add activity</button>
+            <div class="mt-3">
+              <button
+                type="button"
+                data-add-activity="${day.index}"
+                class="w-full rounded-xl border border-line bg-panel2 px-3 py-2 text-sm font-medium transition hover:-translate-y-0.5 sm:w-auto"
+              >
+                Add activity
+              </button>
             </div>
           </article>
         `;
       }).join("");
-    }
-
-    function escapeHtml(value) {
-      return value
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;");
     }
 
     function updateSummary(total, businessDays, leisureDays) {
@@ -560,15 +459,82 @@
       tipsEl.textContent = "Balanced bleisure split. Block focus time in the mornings and keep evenings open.";
     }
 
-    let currentDays = [];
+    function setMapMarker(lat, lon, label) {
+      const coords = [lat, lon];
+      if (destinationMarker) {
+        destinationMarker.setLatLng(coords).setPopupContent(label);
+      } else {
+        destinationMarker = L.marker(coords).addTo(mapInstance).bindPopup(label);
+      }
+      mapInstance.setView(coords, 12, { animate: true });
+      destinationMarker.openPopup();
+    }
 
-    function generateItinerary() {
+    async function geocodeDestination(destination, { quiet = false } = {}) {
+      const query = destination.trim();
+      if (!query) {
+        mapStatusEl.textContent = "Enter a destination to preview it on the map.";
+        return null;
+      }
+
+      if (!quiet) {
+        mapStatusEl.textContent = `Locating ${query}...`;
+      }
+
+      const url = new URL("https://nominatim.openstreetmap.org/search");
+      url.searchParams.set("q", query);
+      url.searchParams.set("format", "json");
+      url.searchParams.set("limit", "1");
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Could not load map location. Try again in a moment.");
+      }
+
+      const results = await response.json();
+      if (!results.length) {
+        mapStatusEl.textContent = `No map match found for "${query}". Try a city and country.`;
+        return null;
+      }
+
+      const match = results[0];
+      const label = `<strong>${escapeHtml(query)}</strong><br>${escapeHtml(match.display_name)}`;
+      setMapMarker(Number(match.lat), Number(match.lon), label);
+      mapStatusEl.textContent = `Showing ${query} on the map.`;
+      lastGeocodedDestination = query;
+      return {
+        lat: Number(match.lat),
+        lon: Number(match.lon),
+        displayName: match.display_name,
+      };
+    }
+
+    function scheduleGeocode() {
+      clearTimeout(geocodeTimer);
+      geocodeTimer = setTimeout(() => {
+        const destination = fields.destination.value.trim();
+        if (!destination || destination === lastGeocodedDestination) {
+          return;
+        }
+        geocodeDestination(destination, { quiet: true }).catch(() => {
+          mapStatusEl.textContent = "Map lookup failed. Check the destination spelling.";
+        });
+      }, 700);
+    }
+
+    async function generateItinerary() {
       const data = getFormData();
       const { start, total } = validateTrip(data);
       currentDays = buildDayPlan(start, total, data.businessDays, data.leisureDays);
       renderDays(currentDays);
       updateSummary(total, data.businessDays, data.leisureDays);
       updateTips(total, data.businessDays, data.leisureDays);
+      await geocodeDestination(data.destination);
     }
 
     function savePlan() {
@@ -583,7 +549,7 @@
       tipsEl.textContent = "Plan saved locally in this browser.";
     }
 
-    function loadPlan() {
+    async function loadPlan() {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) {
         return;
@@ -606,6 +572,10 @@
           updateSummary(total, Number(saved.businessDays || 0), Number(saved.leisureDays || 0));
           updateTips(total, Number(saved.businessDays || 0), Number(saved.leisureDays || 0));
         }
+
+        if (saved.destination) {
+          await geocodeDestination(saved.destination, { quiet: true });
+        }
       } catch {
         localStorage.removeItem(STORAGE_KEY);
       }
@@ -618,6 +588,18 @@
       updateSummary(0, 0, 0);
       localStorage.removeItem(STORAGE_KEY);
       tipsEl.textContent = "Planner reset. Start a fresh bleisure itinerary.";
+      lastGeocodedDestination = "";
+
+      if (destinationMarker) {
+        mapInstance.removeLayer(destinationMarker);
+        destinationMarker = null;
+      }
+      mapInstance.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+      mapStatusEl.textContent = "Enter a destination to preview it on the map.";
+
+      const today = new Date();
+      fields.startDate.value = today.toISOString().slice(0, 10);
+      fields.endDate.value = new Date(today.getTime() + 4 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     }
 
     dayList.addEventListener("input", (event) => {
@@ -662,11 +644,9 @@
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();
-      try {
-        generateItinerary();
-      } catch (error) {
+      generateItinerary().catch((error) => {
         tipsEl.textContent = error.message;
-      }
+      });
     });
 
     document.getElementById("save-btn").addEventListener("click", () => {
@@ -678,17 +658,28 @@
     });
 
     document.getElementById("reset-btn").addEventListener("click", resetPlan);
+    fields.destination.addEventListener("input", scheduleGeocode);
+
+    window.addEventListener("resize", () => {
+      mapInstance.invalidateSize();
+    });
 
     const today = new Date();
-    const startDefault = today.toISOString().slice(0, 10);
-    const endDefault = new Date(today.getTime() + 4 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    fields.startDate.value = startDefault;
-    fields.endDate.value = endDefault;
+    fields.startDate.value = today.toISOString().slice(0, 10);
+    fields.endDate.value = new Date(today.getTime() + 4 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    fields.destination.value = "Lisbon, Portugal";
 
-    loadPlan();
-    if (!currentDays.length) {
-      generateItinerary();
-    }
+    loadPlan().finally(() => {
+      if (!currentDays.length) {
+        generateItinerary().catch(() => {
+          tipsEl.textContent = "Set your trip details and generate an itinerary.";
+        });
+      } else {
+        mapInstance.invalidateSize();
+      }
+    });
+
+    setTimeout(() => mapInstance.invalidateSize(), 150);
   </script>
 </body>
 </html>
