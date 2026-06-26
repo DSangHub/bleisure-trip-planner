@@ -3,6 +3,10 @@ import {
   LEISURE_SUGGESTIONS,
   SOLAR_HOTELS,
 } from "./constants";
+import {
+  getDestinationValidationError,
+  normalizeDestination,
+} from "./destinations";
 import { defaultTripDates, destinationKey, formatDateLabel, toLocalDateString } from "./format";
 import type {
   SolarHotel,
@@ -22,8 +26,9 @@ export function dayCount(start: Date, end: Date): number {
 }
 
 export function validateTrip(data: TripFormData): TripValidationResult {
-  if (!data.destination.trim()) {
-    throw new Error("Destination is required.");
+  const destinationError = getDestinationValidationError(data.destination);
+  if (destinationError) {
+    throw new Error(destinationError);
   }
   if (!data.startDate || !data.endDate) {
     throw new Error("Start and end dates are required.");
@@ -46,7 +51,7 @@ export function validateTrip(data: TripFormData): TripValidationResult {
 export function normalizeTripForm(trip: TripFormData): TripFormData {
   const defaults = defaultTripDates();
   const normalized: TripFormData = {
-    destination: trip.destination.trim(),
+    destination: normalizeDestination(trip.destination),
     traveler: trip.traveler.trim(),
     startDate: trip.startDate || defaults.startDate,
     endDate: trip.endDate || defaults.endDate,

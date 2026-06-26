@@ -20,6 +20,14 @@ export function destinationKey(destination: string): string {
   if (value.includes("lisbon")) return "lisbon";
   if (value.includes("denver")) return "denver";
   if (value.includes("paris")) return "paris";
+  if (value.includes("rome") || value.includes("roma")) return "rome";
+  if (value.includes("barcelona")) return "barcelona";
+  if (value.includes("amsterdam")) return "amsterdam";
+  if (value.includes("tokyo")) return "tokyo";
+  if (value.includes("singapore")) return "singapore";
+  if (value.includes("sydney")) return "sydney";
+  if (value.includes("new york")) return "newyork";
+  if (value.includes("san francisco")) return "sanfrancisco";
   return "default";
 }
 

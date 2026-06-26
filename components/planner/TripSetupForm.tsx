@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
+import { DestinationAutocomplete } from "@/components/planner/DestinationAutocomplete";
 import { Button, inputClassName } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { getDestinationValidationError } from "@/lib/destinations";
 import { exportItineraryPdf } from "@/lib/pdf";
 import { normalizeTripForm, validateTrip } from "@/lib/trip";
 import { useToastStore } from "@/store/toast-store";
@@ -20,8 +23,19 @@ export function TripSetupForm() {
   const saveCurrentTrip = useTripStore((state) => state.saveCurrentTrip);
   const resetPlanner = useTripStore((state) => state.resetPlanner);
   const showToast = useToastStore((state) => state.showToast);
+  const [destinationError, setDestinationError] = useState<string | null>(null);
+  const [destinationTouched, setDestinationTouched] = useState(false);
 
   const handleGenerate = async () => {
+    const error = getDestinationValidationError(trip.destination);
+    if (error) {
+      setDestinationTouched(true);
+      setDestinationError(error);
+      showToast(error, "error");
+      return;
+    }
+
+    setDestinationError(null);
     await generateItinerary();
   };
 
@@ -65,13 +79,21 @@ export function TripSetupForm() {
             <label htmlFor="destination" className="mb-1.5 block text-sm text-mist">
               Destination
             </label>
-            <input
+            <DestinationAutocomplete
               id="destination"
               value={trip.destination}
-              onChange={(event) => setTripField("destination", event.target.value)}
-              placeholder="Lisbon, Portugal"
-              required
-              className={inputClassName()}
+              disabled={isGenerating}
+              error={destinationTouched ? destinationError : null}
+              onChange={(value) => {
+                setTripField("destination", value);
+                if (destinationTouched) {
+                  setDestinationError(getDestinationValidationError(value));
+                }
+              }}
+              onBlur={() => {
+                setDestinationTouched(true);
+                setDestinationError(getDestinationValidationError(trip.destination));
+              }}
             />
           </div>
           <div>
@@ -169,7 +191,15 @@ export function TripSetupForm() {
           <Button type="button" variant="solar" onClick={handleExport}>
             Export PDF
           </Button>
-          <Button type="button" variant="danger" onClick={resetPlanner}>
+          <Button
+            type="button"
+            variant="danger"
+            onClick={() => {
+              resetPlanner();
+              setDestinationError(null);
+              setDestinationTouched(false);
+            }}
+          >
             Reset
           </Button>
         </div>
