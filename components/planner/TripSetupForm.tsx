@@ -3,7 +3,7 @@
 import { Button, inputClassName } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { exportItineraryPdf } from "@/lib/pdf";
-import { validateTrip } from "@/lib/trip";
+import { normalizeTripForm, validateTrip } from "@/lib/trip";
 import { useTripStore } from "@/store/trip-store";
 
 export function TripSetupForm() {
@@ -26,8 +26,9 @@ export function TripSetupForm() {
     }
 
     try {
-      const { total } = validateTrip(trip);
-      exportItineraryPdf({ trip, total, days, hotels, costEstimate });
+      const normalizedTrip = normalizeTripForm(trip);
+      const { total } = validateTrip(normalizedTrip);
+      exportItineraryPdf({ trip: normalizedTrip, total, days, hotels, costEstimate });
       useTripStore.getState().setStatusMessage("Itinerary exported as PDF.");
     } catch (error) {
       useTripStore.getState().setStatusMessage(
@@ -81,6 +82,7 @@ export function TripSetupForm() {
               value={trip.startDate}
               onChange={(event) => setTripField("startDate", event.target.value)}
               required
+              suppressHydrationWarning
               className={inputClassName()}
             />
           </div>
@@ -94,6 +96,7 @@ export function TripSetupForm() {
               value={trip.endDate}
               onChange={(event) => setTripField("endDate", event.target.value)}
               required
+              suppressHydrationWarning
               className={inputClassName()}
             />
           </div>
@@ -106,7 +109,9 @@ export function TripSetupForm() {
               type="number"
               min={0}
               value={trip.businessDays}
-              onChange={(event) => setTripField("businessDays", Number(event.target.value))}
+              onChange={(event) =>
+                setTripField("businessDays", Math.max(0, Number(event.target.value) || 0))
+              }
               className={inputClassName()}
             />
           </div>
@@ -119,7 +124,9 @@ export function TripSetupForm() {
               type="number"
               min={0}
               value={trip.leisureDays}
-              onChange={(event) => setTripField("leisureDays", Number(event.target.value))}
+              onChange={(event) =>
+                setTripField("leisureDays", Math.max(0, Number(event.target.value) || 0))
+              }
               className={inputClassName()}
             />
           </div>
@@ -159,7 +166,10 @@ export function TripSetupForm() {
           {tip}
         </div>
         {statusMessage ? (
-          <div className="rounded-xl border border-line bg-panel2/70 px-3 py-2 text-sm text-mist">
+          <div
+            role="status"
+            className="rounded-xl border border-sky/25 bg-sky/10 px-3 py-2 text-sm text-slate-200"
+          >
             {statusMessage}
           </div>
         ) : null}

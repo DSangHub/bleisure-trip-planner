@@ -6,6 +6,7 @@ import { ItineraryOverview } from "@/components/planner/ItineraryOverview";
 import { CostEstimator } from "@/components/planner/CostEstimator";
 import { SolarHotels } from "@/components/planner/SolarHotels";
 import { PlannerHydration } from "@/components/planner/PlannerHydration";
+import { StoreHydrationGate } from "@/components/planner/StoreHydrationGate";
 import { Card } from "@/components/ui/Card";
 
 const DestinationMap = dynamic(
@@ -22,7 +23,8 @@ const DestinationMap = dynamic(
 
 export function PlannerWorkspace() {
   return (
-    <PlannerHydration>
+    <StoreHydrationGate>
+      <PlannerHydration>
       <header className="mb-6 sm:mb-8">
         <div className="inline-flex items-center rounded-full border border-sky/25 bg-sky/10 px-3 py-1 text-xs font-medium text-sky sm:text-sm">
           Business + Leisure
@@ -51,6 +53,7 @@ export function PlannerWorkspace() {
         <CostEstimator />
         <SolarHotels />
       </div>
-    </PlannerHydration>
+      </PlannerHydration>
+    </StoreHydrationGate>
   );
 }

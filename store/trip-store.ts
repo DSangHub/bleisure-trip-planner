@@ -9,6 +9,7 @@ import {
   buildDayPlan,
   getSolarHotels,
   getTripTip,
+  normalizeTripForm,
   validateTrip,
 } from "@/lib/trip";
 import type {
@@ -146,46 +147,48 @@ export const useTripStore = create<TripState>()(
         set({ isGenerating: true, statusMessage: "" });
 
         try {
-          const { start, total } = validateTrip(state.trip);
+          const trip = normalizeTripForm(state.trip);
+          const { start, total } = validateTrip(trip);
           const days = buildDayPlan(
             start,
             total,
-            state.trip.businessDays,
-            state.trip.leisureDays,
+            trip.businessDays,
+            trip.leisureDays,
           );
-          const hotels = getSolarHotels(state.trip.destination);
+          const hotels = getSolarHotels(trip.destination);
           const costs = {
             ...state.costs,
             nightly: averageHotelRate(hotels),
           };
-          const { costEstimate, tip } = recomputeCosts(state.trip, days, costs, hotels);
+          const { costEstimate, tip } = recomputeCosts(trip, days, costs, hotels);
 
           set({
+            trip,
             days,
             hotels,
             costs,
             costEstimate,
             tip,
-            mapStatus: `Locating ${state.trip.destination}...`,
+            statusMessage: `Itinerary generated for ${trip.destination}.`,
           });
 
-          const geocode = await geocodeDestinationClient(state.trip.destination);
+          set({ mapStatus: `Locating ${trip.destination}...` });
+          const geocode = await geocodeDestinationClient(trip.destination);
           if (!geocode) {
             set({
               geocode: null,
-              mapStatus: `No map match found for "${state.trip.destination}". Try a city and country.`,
+              mapStatus: `No map match found for "${trip.destination}". Itinerary was still generated.`,
             });
           } else {
             set({
               geocode,
-              mapStatus: `Showing ${state.trip.destination} on the map.`,
+              mapStatus: `Showing ${trip.destination} on the map.`,
             });
           }
         } catch (error) {
           const message = error instanceof Error ? error.message : "Could not generate itinerary.";
           set({
             statusMessage: message,
-            mapStatus: message,
           });
         } finally {
           set({ isGenerating: false });
@@ -200,12 +203,13 @@ export const useTripStore = create<TripState>()(
         }
 
         try {
-          validateTrip(state.trip);
+          const trip = normalizeTripForm(state.trip);
+          validateTrip(trip);
           const savedTrip: SavedTrip = {
             id: createTripId(),
-            name: `${state.trip.destination} (${state.trip.startDate})`,
+            name: `${trip.destination} (${trip.startDate})`,
             savedAt: new Date().toISOString(),
-            trip: state.trip,
+            trip,
             days: state.days,
             costs: state.costs,
             hotels: state.hotels,
@@ -213,6 +217,7 @@ export const useTripStore = create<TripState>()(
           };
 
           set({
+            trip,
             savedTrips: [savedTrip, ...state.savedTrips],
             statusMessage: "Trip saved to your collection.",
           });
@@ -269,6 +274,24 @@ export const useTripStore = create<TripState>()(
     }),
     {
       name: "bleisure-trip-planner-next",
+      version: 1,
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<TripState> | undefined;
+        if (!persisted) {
+          return currentState;
+        }
+
+        const trip = normalizeTripForm({
+          ...currentState.trip,
+          ...(persisted.trip ?? {}),
+        });
+
+        return {
+          ...currentState,
+          ...persisted,
+          trip,
+        };
+      },
       partialize: (state) => ({
         trip: state.trip,
         days: state.days,

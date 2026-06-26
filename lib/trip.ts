@@ -3,7 +3,7 @@ import {
   LEISURE_SUGGESTIONS,
   SOLAR_HOTELS,
 } from "./constants";
-import { destinationKey, formatDateLabel } from "./format";
+import { defaultTripDates, destinationKey, formatDateLabel, toLocalDateString } from "./format";
 import type {
   SolarHotel,
   TripDay,
@@ -43,6 +43,38 @@ export function validateTrip(data: TripFormData): TripValidationResult {
   return { start, end, total };
 }
 
+export function normalizeTripForm(trip: TripFormData): TripFormData {
+  const defaults = defaultTripDates();
+  const normalized: TripFormData = {
+    destination: trip.destination.trim(),
+    traveler: trip.traveler.trim(),
+    startDate: trip.startDate || defaults.startDate,
+    endDate: trip.endDate || defaults.endDate,
+    businessDays: Math.max(0, Number(trip.businessDays) || 0),
+    leisureDays: Math.max(0, Number(trip.leisureDays) || 0),
+    notes: trip.notes.trim(),
+  };
+
+  try {
+    const { total } = validateTrip(normalized);
+    if (normalized.businessDays + normalized.leisureDays > total) {
+      normalized.businessDays = Math.min(normalized.businessDays, total);
+      normalized.leisureDays = Math.min(
+        normalized.leisureDays,
+        Math.max(total - normalized.businessDays, 0),
+      );
+    }
+    return normalized;
+  } catch {
+    return {
+      ...normalized,
+      ...defaults,
+      businessDays: 3,
+      leisureDays: 2,
+    };
+  }
+}
+
 export function buildDayPlan(
   start: Date,
   total: number,
@@ -76,7 +108,7 @@ export function buildDayPlan(
 
     days.push({
       index,
-      date: date.toISOString().slice(0, 10),
+      date: toLocalDateString(date),
       label: formatDateLabel(date),
       type,
       activities: [suggestions[index % suggestions.length]],

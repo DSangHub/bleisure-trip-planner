@@ -47,7 +47,12 @@ export const SOLAR_HOTELS: Record<string, SolarHotel[]> = {
     { name: "Montmartre Helios", nightlyRate: 195, solarCoverage: 83, rating: 4.6, highlight: "Hybrid solar-thermal system for hot water." },
     { name: "Left Bank Sun Hotel", nightlyRate: 205, solarCoverage: 79, rating: 4.4, highlight: "Smart energy dashboard in every room." },
   ],
-  default: [
+      denver: [
+        { name: "Rocky Mountain Sol Hotel", nightlyRate: 175, solarCoverage: 86, rating: 4.5, highlight: "Solar roof array powers the business center and guest rooms." },
+        { name: "Mile High Helios Inn", nightlyRate: 155, solarCoverage: 79, rating: 4.4, highlight: "Downtown stay with battery-backed solar microgrid." },
+        { name: "Front Range Sun Suites", nightlyRate: 140, solarCoverage: 91, rating: 4.3, highlight: "High solar coverage near convention and leisure districts." },
+      ],
+      default: [
     { name: "Helios Urban Hotel", nightlyRate: 160, solarCoverage: 80, rating: 4.4, highlight: "Solar canopy over the rooftop lounge." },
     { name: "SunStay City Collection", nightlyRate: 140, solarCoverage: 72, rating: 4.3, highlight: "Certified green stay with on-site solar array." },
     { name: "EcoGrid Boutique Inn", nightlyRate: 155, solarCoverage: 85, rating: 4.5, highlight: "High solar coverage with low overnight rates." },

@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { exportItineraryPdf } from "@/lib/pdf";
-import { validateTrip } from "@/lib/trip";
+import { normalizeTripForm, validateTrip } from "@/lib/trip";
 import { useTripStore } from "@/store/trip-store";
 import { DayCard } from "@/components/planner/DayCard";
 
@@ -36,7 +36,8 @@ export function ItineraryOverview({ className = "" }: { className?: string }) {
       useTripStore.getState().setStatusMessage("Generate an itinerary before exporting to PDF.");
       return;
     }
-    exportItineraryPdf({ trip, total, days, hotels, costEstimate });
+    const normalizedTrip = normalizeTripForm(trip);
+    exportItineraryPdf({ trip: normalizedTrip, total, days, hotels, costEstimate });
     useTripStore.getState().setStatusMessage("Itinerary exported as PDF.");
   };
 
@@ -56,7 +57,7 @@ export function ItineraryOverview({ className = "" }: { className?: string }) {
         <Stat value={String(trip.leisureDays)} label="Leisure days" valueClass="text-fun" />
       </div>
 
-      <div className="day-list max-h-[28rem] space-y-3 overflow-y-auto pr-1 sm:max-h-[34rem] lg:max-h-[calc(100vh-18rem)]">
+      <div id="day-list" className="day-list max-h-[28rem] space-y-3 overflow-y-auto pr-1 sm:max-h-[34rem] lg:max-h-[calc(100vh-18rem)]">
         {!days.length ? (
           <div className="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-mist">
             Generate an itinerary to see your day-by-day plan.
