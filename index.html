@@ -262,6 +262,7 @@
     let mapInstance = null;
     let destinationMarker = null;
     let geocodeTimer = null;
+    let geocodeRequestId = 0;
     let lastGeocodedDestination = "";
 
     const mapInstanceRef = L.map("map", {
@@ -459,6 +460,14 @@
       tipsEl.textContent = "Balanced bleisure split. Block focus time in the mornings and keep evenings open.";
     }
 
+    function clearDestinationMarker() {
+      if (!destinationMarker) {
+        return;
+      }
+      mapInstance.removeLayer(destinationMarker);
+      destinationMarker = null;
+    }
+
     function setMapMarker(lat, lon, label) {
       const coords = [lat, lon];
       if (destinationMarker) {
@@ -477,6 +486,8 @@
         return null;
       }
 
+      const requestId = ++geocodeRequestId;
+
       if (!quiet) {
         mapStatusEl.textContent = `Locating ${query}...`;
       }
@@ -485,12 +496,25 @@
       url.searchParams.set("q", query);
       url.searchParams.set("format", "json");
       url.searchParams.set("limit", "1");
+      url.searchParams.set("cb", String(Date.now()));
 
-      const response = await fetch(url.toString(), {
-        headers: {
-          Accept: "application/json",
-        },
-      });
+      let response;
+      try {
+        response = await fetch(url.toString(), {
+          headers: {
+            Accept: "application/json",
+          },
+        });
+      } catch {
+        if (requestId !== geocodeRequestId) {
+          return null;
+        }
+        throw new Error("Map lookup failed. Check your connection and try again.");
+      }
+
+      if (requestId !== geocodeRequestId) {
+        return null;
+      }
 
       if (!response.ok) {
         throw new Error("Could not load map location. Try again in a moment.");
@@ -514,8 +538,13 @@
       };
     }
 
-    function scheduleGeocode() {
+    function cancelScheduledGeocode() {
       clearTimeout(geocodeTimer);
+      geocodeTimer = null;
+    }
+
+    function scheduleGeocode() {
+      cancelScheduledGeocode();
       geocodeTimer = setTimeout(() => {
         const destination = fields.destination.value.trim();
         if (!destination || destination === lastGeocodedDestination) {
@@ -528,13 +557,21 @@
     }
 
     async function generateItinerary() {
+      cancelScheduledGeocode();
       const data = getFormData();
       const { start, total } = validateTrip(data);
       currentDays = buildDayPlan(start, total, data.businessDays, data.leisureDays);
       renderDays(currentDays);
       updateSummary(total, data.businessDays, data.leisureDays);
       updateTips(total, data.businessDays, data.leisureDays);
-      await geocodeDestination(data.destination);
+
+      const location = await geocodeDestination(data.destination);
+      if (!location) {
+        clearDestinationMarker();
+        mapInstance.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+        lastGeocodedDestination = "";
+      }
+      return location;
     }
 
     function savePlan() {
@@ -590,10 +627,7 @@
       tipsEl.textContent = "Planner reset. Start a fresh bleisure itinerary.";
       lastGeocodedDestination = "";
 
-      if (destinationMarker) {
-        mapInstance.removeLayer(destinationMarker);
-        destinationMarker = null;
-      }
+      clearDestinationMarker();
       mapInstance.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
       mapStatusEl.textContent = "Enter a destination to preview it on the map.";
 
@@ -646,6 +680,7 @@
       event.preventDefault();
       generateItinerary().catch((error) => {
         tipsEl.textContent = error.message;
+        mapStatusEl.textContent = error.message;
       });
     });
 
